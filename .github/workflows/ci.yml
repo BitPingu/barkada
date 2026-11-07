@@ -1,0 +1,45 @@
+# Name displayed in the GitHub Actions tab
+name: CI
+
+# Run the workflow whenever code is pushed or a pull request is opened.
+on:
+  push:
+  pull_request:
+
+# Grant the workflow read-only access to repository contents.
+permissions:
+  contents: read
+
+# Define the jobs that make up the CI pipeline.
+jobs:
+  build:
+    # Run the job on a fresh Ubuntu environment
+    runs-on: ubuntu-latest
+
+    steps:
+      # Download the repository code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Install Node.js and enable npm dependency caching
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Install dependencies from package-lock.json
+      - name: Install dependencies
+        run: npm ci
+
+      # Check code for linting issues
+      - name: Run ESLint
+        run: npm run lint
+      
+      # Check code formatting
+      - name: Check formatting
+        run: npm run format:check
+
+      # Verify that the project builds successfully
+      - name: Build project
+        run: npm run build

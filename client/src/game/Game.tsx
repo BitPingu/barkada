@@ -19,14 +19,10 @@ class TownScene extends Phaser.Scene {
   // Automatically called when the scene starts
   create() {
     // Sky background
-    this.add.rectangle(
-      480, 270, 960, 540, 0x9bd8f5
-    );
+    this.add.rectangle(480, 270, 960, 540, 0x9bd8f5);
 
     // Grassy ground
-    this.add.rectangle(
-      480, 350, 960, 380, 0x78bd62
-    );
+    this.add.rectangle(480, 350, 960, 380, 0x78bd62);
 
     // Grass variation
     const grass = this.add.graphics();
@@ -58,11 +54,7 @@ class TownScene extends Phaser.Scene {
 
     // Left roof
     buildings.fillStyle(0xb85c45);
-    buildings.fillTriangle(
-      90, 55,
-      180, -5,
-      270, 55
-    );
+    buildings.fillTriangle(90, 55, 180, -5, 270, 55);
 
     // Middle building
     buildings.fillStyle(0xf0d18a);
@@ -70,11 +62,7 @@ class TownScene extends Phaser.Scene {
 
     // Middle roof
     buildings.fillStyle(0x9b634b);
-    buildings.fillTriangle(
-      380, 25,
-      480, -50,
-      580, 25
-    );
+    buildings.fillTriangle(380, 25, 480, -50, 580, 25);
 
     // Right building
     buildings.fillStyle(0xb5d99b);
@@ -82,13 +70,9 @@ class TownScene extends Phaser.Scene {
 
     // Right roof
     buildings.fillStyle(0x658b58);
-    buildings.fillTriangle(
-      700, 55,
-      790, -5,
-      880, 55
-    );
+    buildings.fillTriangle(700, 55, 790, -5, 880, 55);
 
-    // Create placeholder human character    
+    // Create placeholder human character
     this.player = this.add.container(480, 320);
 
     // Graphics object
@@ -138,17 +122,9 @@ class TownScene extends Phaser.Scene {
     character.fillEllipse(14, -56, 14, 19);
 
     // Hair fringe
-    character.fillTriangle(
-      -15, -55,
-      0, -49,
-      -5, -61
-    );
+    character.fillTriangle(-15, -55, 0, -49, -5, -61);
 
-    character.fillTriangle(
-      0, -55,
-      14, -49,
-      8, -62
-    );
+    character.fillTriangle(0, -55, 14, -49, 8, -62);
 
     // Eyes
     character.fillStyle(0xffffff);
@@ -192,17 +168,14 @@ class TownScene extends Phaser.Scene {
         this.player.x,
         this.player.y,
         x,
-        y
+        y,
       );
 
       // Stop
       if (distance < 5) return;
 
       // Face the direction of movement
-      this.player.setScale(
-        x < this.player.x ? -1 : 1,
-        1
-      );
+      this.player.setScale(x < this.player.x ? -1 : 1, 1);
 
       // Remove previous movement
       this.tweens.killTweensOf(this.player);
@@ -211,17 +184,15 @@ class TownScene extends Phaser.Scene {
       this.destinationMarker?.destroy();
 
       // Show destination marker
-      this.destinationMarker = this.add.circle(
-        x, y, 6, 0x3498db, 0.6
-      );
+      this.destinationMarker = this.add.circle(x, y, 6, 0x3498db, 0.6);
 
       // Walk to destination
       this.tweens.add({
-        targets: this.player,  // to animate
-        x,  // destination horizontal position
-        y,  // destination vertical position
-        duration: (distance / 180) * 1000,  // 180 pixels per second
-        ease: "Linear",  // consistent speed
+        targets: this.player, // to animate
+        x, // destination horizontal position
+        y, // destination vertical position
+        duration: (distance / 180) * 1000, // 180 pixels per second
+        ease: "Linear", // consistent speed
         onUpdate: () => {
           // update depth as it moves
           this.player.setDepth(this.player.y);
@@ -230,7 +201,7 @@ class TownScene extends Phaser.Scene {
           // remove destination marker and clear reference
           this.destinationMarker?.destroy();
           this.destinationMarker = undefined;
-        }
+        },
       });
     });
   }
@@ -247,16 +218,16 @@ export default function Game() {
 
     // Create Phaser game instance on a canvas
     const game = new Phaser.Game({
-      type: Phaser.AUTO,  // rendering method
+      type: Phaser.AUTO, // rendering method
       width: 960,
       height: 540,
-      parent: gameRef.current,  // HTML element to contain the canvas
+      parent: gameRef.current, // HTML element to contain the canvas
       backgroundColor: "#ccecff",
-      scene: [TownScene],  // scenes to load
+      scene: [TownScene], // scenes to load
       scale: {
         mode: Phaser.Scale.FIT,
-        autoCenter: Phaser.Scale.CENTER_BOTH
-      }
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+      },
     });
 
     // Cleanup

@@ -1,4 +1,6 @@
-import Game from "./game/Game";
+import { lazy, Suspense } from "react";
+
+const Game = lazy(() => import("./game/Game"));
 
 // Render application and Game component
 function App() {
@@ -6,7 +8,10 @@ function App() {
     <main className="game-page">
       <h1>Welcome to Barkada</h1>
       <div className="game-container">
-        <Game />
+        {/* Load game separately from app bundle */}
+        <Suspense fallback={<div>Loading game...</div>}>
+          <Game />
+        </Suspense>
       </div>
     </main>
   );
