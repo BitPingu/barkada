@@ -1,15 +1,22 @@
-
 import { useEffect, useRef } from "react";
 import Phaser from "phaser";
 
+// Initializes Phaser and creates the game canvas
+
+// Creates and manages the town environment
 class TownScene extends Phaser.Scene {
+  // Stores a reference to the player's character
   private player!: Phaser.GameObjects.Container;
+
+  // Stores the circle displayed when the player clicks somewhere to move
   private destinationMarker?: Phaser.GameObjects.Arc;
 
+  // Initialize the scene
   constructor() {
     super("TownScene");
   }
 
+  // Automatically called when the scene starts
   create() {
     // Sky background
     this.add.rectangle(
@@ -43,45 +50,48 @@ class TownScene extends Phaser.Scene {
     path.fillEllipse(480, 340, 620, 125);
 
     // Buildings
-    // Left building
-    this.add.rectangle(
-      180, 115, 180, 120, 0xe8a66b
-    );
+    const buildings = this.add.graphics();
 
-    this.add.triangle(
-      180, 35,
-      80, 85,
-      280, 85,
-      0xb85c45
+    // Left building
+    buildings.fillStyle(0xe8a66b);
+    buildings.fillRect(90, 55, 180, 120);
+
+    // Left roof
+    buildings.fillStyle(0xb85c45);
+    buildings.fillTriangle(
+      90, 55,
+      180, -5,
+      270, 55
     );
 
     // Middle building
-    this.add.rectangle(
-      480, 100, 200, 150, 0xf0d18a
-    );
+    buildings.fillStyle(0xf0d18a);
+    buildings.fillRect(380, 25, 200, 150);
 
-    this.add.triangle(
-      480, 5,
-      365, 60,
-      595, 60,
-      0x9b634b
+    // Middle roof
+    buildings.fillStyle(0x9b634b);
+    buildings.fillTriangle(
+      380, 25,
+      480, -50,
+      580, 25
     );
 
     // Right building
-    this.add.rectangle(
-      790, 115, 180, 120, 0xb5d99b
-    );
+    buildings.fillStyle(0xb5d99b);
+    buildings.fillRect(700, 55, 180, 120);
 
-    this.add.triangle(
-      790, 35,
-      690, 85,
-      890, 85,
-      0x658b58
+    // Right roof
+    buildings.fillStyle(0x658b58);
+    buildings.fillTriangle(
+      700, 55,
+      790, -5,
+      880, 55
     );
 
     // Create placeholder human character    
     this.player = this.add.container(480, 320);
 
+    // Graphics object
     const character = this.add.graphics();
 
     // Legs
@@ -165,14 +175,19 @@ class TownScene extends Phaser.Scene {
     character.arc(0, -36, 3, 0.2, Math.PI - 0.2, false);
     character.strokePath();
 
+    // Add the Graphics object to the container
     this.player.add(character);
+
+    // Render depth
     this.player.setDepth(this.player.y);
 
     // Point-and-click movement
     this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+      // Get pointer coordinates
       const x = Phaser.Math.Clamp(pointer.worldX, 25, 935);
-      const y = Phaser.Math.Clamp(pointer.worldY, 80, 490);
+      const y = Phaser.Math.Clamp(pointer.worldY, 160, 490);
 
+      // Distance between player position and destination
       const distance = Phaser.Math.Distance.Between(
         this.player.x,
         this.player.y,
@@ -180,6 +195,7 @@ class TownScene extends Phaser.Scene {
         y
       );
 
+      // Stop
       if (distance < 5) return;
 
       // Face the direction of movement
@@ -191,24 +207,27 @@ class TownScene extends Phaser.Scene {
       // Remove previous movement
       this.tweens.killTweensOf(this.player);
 
-      // Show destination marker
+      // Remove previous destination marker
       this.destinationMarker?.destroy();
 
+      // Show destination marker
       this.destinationMarker = this.add.circle(
         x, y, 6, 0x3498db, 0.6
       );
 
       // Walk to destination
       this.tweens.add({
-        targets: this.player,
-        x,
-        y,
-        duration: (distance / 180) * 1000,
-        ease: "Linear",
+        targets: this.player,  // to animate
+        x,  // destination horizontal position
+        y,  // destination vertical position
+        duration: (distance / 180) * 1000,  // 180 pixels per second
+        ease: "Linear",  // consistent speed
         onUpdate: () => {
+          // update depth as it moves
           this.player.setDepth(this.player.y);
         },
         onComplete: () => {
+          // remove destination marker and clear reference
           this.destinationMarker?.destroy();
           this.destinationMarker = undefined;
         }
@@ -217,29 +236,35 @@ class TownScene extends Phaser.Scene {
   }
 }
 
+// Creates the Phaser game
 export default function Game() {
+  // Reference to div
   const gameRef = useRef<HTMLDivElement>(null);
 
+  // Runs after rendering
   useEffect(() => {
     if (!gameRef.current) return;
 
+    // Create Phaser game instance on a canvas
     const game = new Phaser.Game({
-      type: Phaser.AUTO,
+      type: Phaser.AUTO,  // rendering method
       width: 960,
       height: 540,
-      parent: gameRef.current,
+      parent: gameRef.current,  // HTML element to contain the canvas
       backgroundColor: "#ccecff",
-      scene: [TownScene],
+      scene: [TownScene],  // scenes to load
       scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH
       }
     });
 
+    // Cleanup
     return () => {
       game.destroy(true);
     };
   }, []);
 
+  // HTML element Phaser uses as parent
   return <div ref={gameRef} />;
 }

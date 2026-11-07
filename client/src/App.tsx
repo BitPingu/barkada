@@ -1,6 +1,6 @@
-
 import Game from "./game/Game";
 
+// Render application and Game component
 function App() {
   return (
     <main className="game-page">
