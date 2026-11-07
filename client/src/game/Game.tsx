@@ -11,73 +11,161 @@ class TownScene extends Phaser.Scene {
   }
 
   create() {
-    // Background
+    // Sky background
     this.add.rectangle(
-      480, 270, 960, 540, 0xccecff
+      480, 270, 960, 540, 0x9bd8f5
     );
 
-    // Snow-covered ground
+    // Grassy ground
     this.add.rectangle(
-      480, 300, 960, 480, 0xf2f8fc
+      480, 350, 960, 380, 0x78bd62
     );
+
+    // Grass variation
+    const grass = this.add.graphics();
+
+    grass.fillStyle(0x6eae59, 0.5);
+    grass.fillEllipse(120, 220, 180, 70);
+    grass.fillEllipse(820, 250, 220, 90);
+    grass.fillEllipse(500, 480, 500, 100);
+
+    grass.fillStyle(0x91cc72, 0.5);
+    grass.fillEllipse(300, 200, 160, 60);
+    grass.fillEllipse(700, 420, 240, 70);
 
     // Walking path
     const path = this.add.graphics();
-    path.fillStyle(0xd8e1e8);
-    path.fillEllipse(480, 330, 650, 160);
 
-    // Simple buildings
+    path.fillStyle(0xd8c49a);
+    path.fillEllipse(480, 350, 680, 170);
+
+    path.fillStyle(0xe8d6ae, 0.7);
+    path.fillEllipse(480, 340, 620, 125);
+
+    // Buildings
+    // Left building
     this.add.rectangle(
-      180, 115, 180, 120, 0x8bafd0
+      180, 115, 180, 120, 0xe8a66b
     );
 
-    this.add.rectangle(
-      480, 100, 200, 150, 0xb7a2d8
+    this.add.triangle(
+      180, 35,
+      80, 85,
+      280, 85,
+      0xb85c45
     );
 
+    // Middle building
     this.add.rectangle(
-      790, 115, 180, 120, 0x91bda7
+      480, 100, 200, 150, 0xf0d18a
     );
 
-    // Create placeholder penguin
+    this.add.triangle(
+      480, 5,
+      365, 60,
+      595, 60,
+      0x9b634b
+    );
+
+    // Right building
+    this.add.rectangle(
+      790, 115, 180, 120, 0xb5d99b
+    );
+
+    this.add.triangle(
+      790, 35,
+      690, 85,
+      890, 85,
+      0x658b58
+    );
+
+    // Create placeholder human character    
     this.player = this.add.container(480, 320);
 
-    const penguin = this.add.graphics();
+    const character = this.add.graphics();
 
-    // Body
-    penguin.fillStyle(0x26384b);
-    penguin.fillEllipse(0, 5, 48, 60);
+    // Legs
+    character.fillStyle(0x26384b);
+    character.fillRoundedRect(-8, -3, 7, 17, 3);
+    character.fillRoundedRect(1, -3, 7, 17, 3);
 
-    // Belly
-    penguin.fillStyle(0xffffff);
-    penguin.fillEllipse(0, 10, 30, 42);
+    // Shoes
+    character.fillStyle(0x59402e);
+    character.fillEllipse(-5, 14, 13, 7);
+    character.fillEllipse(5, 14, 13, 7);
 
-    // Head
-    penguin.fillStyle(0x26384b);
-    penguin.fillCircle(0, -25, 22);
+    // Arms
+    character.fillStyle(0x3979b8);
+    character.fillRoundedRect(-17, -23, 9, 22, 5);
+    character.fillRoundedRect(8, -23, 9, 22, 5);
 
-    // Eyes
-    penguin.fillStyle(0xffffff);
-    penguin.fillCircle(-8, -29, 5);
-    penguin.fillCircle(8, -29, 5);
+    // Hands
+    character.fillStyle(0xe8b18b);
+    character.fillCircle(-12.5, -2, 5);
+    character.fillCircle(12.5, -2, 5);
 
-    // Pupils
-    penguin.fillStyle(0x111827);
-    penguin.fillCircle(-8, -29, 2);
-    penguin.fillCircle(8, -29, 2);
+    // Small body
+    character.fillStyle(0x3979b8);
+    character.fillRoundedRect(-11, -27, 22, 29, 8);
 
-    // Beak
-    penguin.fillStyle(0xffa500);
-    penguin.fillTriangle(
-      -6, -20, 6, -20, 0, -13
+    // Neck
+    character.fillStyle(0xe8b18b);
+    character.fillRoundedRect(-5, -34, 10, 10, 3);
+
+    // Ears
+    character.fillStyle(0xe8b18b);
+    character.fillCircle(-19, -45, 5);
+    character.fillCircle(19, -45, 5);
+
+    // Oversized head
+    character.fillStyle(0xe8b18b);
+    character.fillCircle(0, -48, 22);
+
+    // Hair
+    character.fillStyle(0x38251b);
+    character.fillEllipse(0, -62, 40, 21);
+    character.fillEllipse(-14, -56, 14, 19);
+    character.fillEllipse(14, -56, 14, 19);
+
+    // Hair fringe
+    character.fillTriangle(
+      -15, -55,
+      0, -49,
+      -5, -61
     );
 
-    // Feet
-    penguin.fillStyle(0xffa500);
-    penguin.fillEllipse(-11, 34, 17, 8);
-    penguin.fillEllipse(11, 34, 17, 8);
+    character.fillTriangle(
+      0, -55,
+      14, -49,
+      8, -62
+    );
 
-    this.player.add(penguin);
+    // Eyes
+    character.fillStyle(0xffffff);
+    character.fillEllipse(-8, -46, 8, 11);
+    character.fillEllipse(8, -46, 8, 11);
+
+    character.fillStyle(0x26384b);
+    character.fillCircle(-8, -45, 3);
+    character.fillCircle(8, -45, 3);
+
+    // Eye highlights
+    character.fillStyle(0xffffff);
+    character.fillCircle(-9, -47, 1.5);
+    character.fillCircle(7, -47, 1.5);
+
+    // Blush
+    character.fillStyle(0xe98b83, 0.6);
+    character.fillEllipse(-14, -37, 7, 4);
+    character.fillEllipse(14, -37, 7, 4);
+
+    // Small smile
+    character.lineStyle(1.5, 0x8c493c);
+    character.beginPath();
+    character.arc(0, -36, 3, 0.2, Math.PI - 0.2, false);
+    character.strokePath();
+
+    this.player.add(character);
     this.player.setDepth(this.player.y);
 
     // Point-and-click movement
