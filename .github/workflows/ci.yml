@@ -38,11 +38,10 @@ jobs:
       - name: Run ESLint
         working-directory: client
         run: npm run lint
-      
+
       # Check code formatting
       - name: Check formatting
-        working-directory: client
-        run: npm run format:check
+        run: npx --yes prettier --check .
 
       # Verify that the project builds successfully
       - name: Build project

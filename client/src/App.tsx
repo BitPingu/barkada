@@ -1,6 +1,6 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense } from 'react'
 
-const Game = lazy(() => import("./game/Game"));
+const Game = lazy(() => import('./game/Game'))
 
 // Render application and Game component
 function App() {
@@ -14,7 +14,7 @@ function App() {
         </Suspense>
       </div>
     </main>
-  );
+  )
 }
 
-export default App;
+export default App
