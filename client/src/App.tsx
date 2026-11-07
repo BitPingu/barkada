@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react'
-import client from "./game/colyseus";
+import client from './game/colyseus'
 
 // Lazy-load the Phaser game component.
 // This prevents the game engine from being loaded until needed.
@@ -10,35 +10,35 @@ function App() {
   // Connect to a Colyseus room when the React component mounts.
   useEffect(() => {
     // Track whether this effect instance is still active.
-    let active = true;
+    let active = true
 
     async function joinRoom() {
       try {
         // Join an existing room or create one if none exists.
-        const room = await client.joinOrCreate("my_room");
+        const room = await client.joinOrCreate('my_room')
 
         // Ignore the connection if this effect was cleaned up.
         if (!active) {
-          room.leave();
-          return;
+          room.leave()
+          return
         }
 
         // Log the room and session information for testing.
-        console.log("Joined room:", room.roomId);
-        console.log("Session ID:", room.sessionId);
+        console.log('Joined room:', room.roomId)
+        console.log('Session ID:', room.sessionId)
       } catch (error) {
         // Log any errors encountered while connecting.
-        console.error("Failed to join room:", error);
+        console.error('Failed to join room:', error)
       }
     }
 
-    joinRoom();
+    joinRoom()
 
     // Clean up the connection when the effect is removed.
     return () => {
-      active = false;
-    };
-  }, []);
+      active = false
+    }
+  }, [])
 
   return (
     <main className="game-page">

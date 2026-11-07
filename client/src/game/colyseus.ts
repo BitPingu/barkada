@@ -1,5 +1,5 @@
-import { Client } from "@colyseus/sdk";
+import { Client } from '@colyseus/sdk'
 
-const client = new Client("http://localhost:2567");
+const client = new Client('http://localhost:2567')
 
-export default client;
+export default client
