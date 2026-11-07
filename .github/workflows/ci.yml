@@ -31,16 +31,20 @@ jobs:
 
       # Install dependencies from package-lock.json
       - name: Install dependencies
+        working-directory: client
         run: npm ci
 
       # Check code for linting issues
       - name: Run ESLint
+        working-directory: client
         run: npm run lint
       
       # Check code formatting
       - name: Check formatting
+        working-directory: client
         run: npm run format:check
 
       # Verify that the project builds successfully
       - name: Build project
+        working-directory: client
         run: npm run build
