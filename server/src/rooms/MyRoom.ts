@@ -56,7 +56,7 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
         return
       }
 
-      // Enforce a 1-second cooldown between chat messages.
+      // Enforce a 0.5-second cooldown between chat messages.
       const now = Date.now()
       const lastMessage = this.lastChatMessage.get(client.sessionId) ?? 0
 

@@ -143,6 +143,7 @@
 
 /* Chat toolbar */
 .chat-bar {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -240,6 +241,41 @@
     padding: 10px;
     font-size: 13px;
   }
+}
+
+/* Emoji picker container */
+.emoji-controls {
+  display: flex;
+  align-items: center;
+}
+
+.emoji-picker {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  padding: 4px;
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 0px;
+  width: 120px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgb(0 0 0 / 20%);
+  z-index: 10;
+}
+
+/* Individual emoji buttons */
+.emoji-option {
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  padding: 4px;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.emoji-option:hover {
+  background: #e8eef5;
 }
 
 /* Responsive layout */

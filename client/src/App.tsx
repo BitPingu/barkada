@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import type { Room } from '@colyseus/sdk'
 import client from './game/colyseus'
 import './App.css'
@@ -6,6 +6,9 @@ import './App.css'
 // Lazy-load the Phaser game component.
 // This prevents the game engine from being loaded until needed.
 const Game = lazy(() => import('./game/Game'))
+
+// Emojis available in the picker.
+const EMOJIS = ['😀', '😂', '😢', '😮', '❤️', '👋']
 
 // Render application and Game component
 function App() {
@@ -20,6 +23,12 @@ function App() {
 
   // Tracks whether the chat is currently on cooldown.
   const [isChatCoolingDown, setIsChatCoolingDown] = useState(false)
+
+  // Tracks whether the emoji picker is visible.
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false)
+
+  // References the emoji button and picker.
+  const emojiPickerRef = useRef<HTMLDivElement>(null)
 
   // Connect to a Colyseus room when the React component mounts.
   useEffect(() => {
@@ -71,6 +80,47 @@ function App() {
     }
   }, [])
 
+  // Close the emoji picker when clicking outside the emoji controls.
+  useEffect(() => {
+    // Handle clicks anywhere on the page.
+    function handleClickOutside(event: MouseEvent) {
+      // Check whether the click happened outside the emoji controls.
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(event.target as Node)
+      ) {
+        // Close the emoji picker.
+        setIsEmojiPickerOpen(false)
+      }
+    }
+
+    // Listen for mouse clicks.
+    document.addEventListener('mousedown', handleClickOutside)
+
+    // Remove the listener when the component unmounts.
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
+  // Close the emoji picker when pressing Escape.
+  useEffect(() => {
+    // Handle keyboard input.
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsEmojiPickerOpen(false)
+      }
+    }
+
+    // Listen for keyboard input.
+    document.addEventListener('keydown', handleKeyDown)
+
+    // Remove the listener when the component unmounts.
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [])
+
   // Send a chat message to the server.
   function sendMessage() {
     const text = chatInput.trim()
@@ -86,7 +136,7 @@ function App() {
     // Activate the chat cooldown.
     setIsChatCoolingDown(true)
 
-    // Re-enable chat after 1.1 seconds.
+    // Re-enable chat after 0.6 seconds.
     setTimeout(() => {
       setIsChatCoolingDown(false)
     }, 600)
@@ -135,10 +185,35 @@ function App() {
       </div>
 
       <div className="chat-bar">
-        {/* Emoji button — functionality will be added later. */}
-        <button className="chat-action" aria-label="Emojis" title="Emojis">
-          ☺
-        </button>
+        {/* Emoji controls */}
+        <div className="emoji-controls" ref={emojiPickerRef}>
+          {/* Emoji button */}
+          <button
+            className="chat-action"
+            aria-label="Emojis"
+            title="Emojis"
+            onClick={() => setIsEmojiPickerOpen((open) => !open)}
+            disabled={!room}
+          >
+            ☺
+          </button>
+          {/* Emoji picker */}
+          {isEmojiPickerOpen && (
+            <div className="emoji-picker">
+              {EMOJIS.map((emoji) => (
+                <button
+                  key={emoji}
+                  className="emoji-option"
+                  onClick={() => {
+                    // We'll send the emoji in a later step.
+                  }}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Message input */}
         <input
