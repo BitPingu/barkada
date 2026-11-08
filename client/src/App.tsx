@@ -1,7 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import type { Room } from '@colyseus/sdk'
 import client from './game/colyseus'
-import type { ChatMessage } from './game/types'
 import './App.css'
 
 // Lazy-load the Phaser game component.
@@ -15,9 +14,6 @@ function App() {
 
   // Store the player count.
   const [playerCount, setPlayerCount] = useState(0)
-
-  // Store the chat messages received from the server.
-  const [messages, setMessages] = useState<ChatMessage[]>([])
 
   // Store the message currently being typed.
   const [chatInput, setChatInput] = useState('')
@@ -52,12 +48,6 @@ function App() {
           setPlayerCount(players.size)
 
           console.log('Updated player count:', players.size)
-        })
-
-        // Listen for incoming chat messages from the server.
-        connection.onMessage('chat', (message: ChatMessage) => {
-          console.log('Received chat message:', message)
-          setMessages((previousMessages) => [...previousMessages, message])
         })
 
         // Log the room and session information for testing.
