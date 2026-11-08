@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
 import type { Room } from '@colyseus/sdk'
-import type { MyRoomState } from '../types'
+import type { ChatMessage, MyRoomState } from '../types'
 import {
   createPlayerCharacter,
   startWalkingAnimation,
@@ -16,6 +16,9 @@ export default class TownScene extends Phaser.Scene {
 
   // Stores characters belonging to other players.
   private remotePlayers = new Map<string, Phaser.GameObjects.Container>()
+
+  // Tracks active chat bubbles for each player.
+  private chatBubbles = new Map<string, Phaser.GameObjects.Container>()
 
   // Stores the last synchronized destination for each player.
   private playerTargets = new Map<string, { x: number; y: number }>()
@@ -92,6 +95,90 @@ export default class TownScene extends Phaser.Scene {
         leftArm.setAngle(0)
         rightArm.setAngle(0)
       },
+    })
+  }
+
+  // Displays a chat message above a player's character.
+  private showChatBubble(
+    sessionId: string,
+    character: Phaser.GameObjects.Container,
+    message: string,
+  ) {
+    // Remove the player's previous chat bubble, if one exists.
+    const previousBubble = this.chatBubbles.get(sessionId)
+
+    if (previousBubble) {
+      previousBubble.destroy()
+    }
+
+    // Create the chat bubble container.
+    const bubble = this.add.container(0, -90)
+
+    // Create the chat message text.
+    const text = this.add.text(0, 0, message, {
+      fontSize: '13px',
+      color: '#26384b',
+      fontFamily: 'Arial',
+      align: 'center',
+      wordWrap: { width: 180 },
+      resolution: 2,
+    })
+
+    text.setOrigin(0.5)
+
+    // Calculate the bubble dimensions based on the text.
+    const paddingX = 12
+    const paddingY = 8
+    const width = Math.max(60, text.width + paddingX * 2)
+    const height = text.height + paddingY * 2
+
+    // Move taller chat bubbles higher above the character.
+    bubble.y -= Math.max(0, height - 36) / 2
+
+    // Create the chat bubble background.
+    const background = this.add.graphics()
+
+    background.fillStyle(0xffffff, 1)
+    background.lineStyle(2, 0x526477, 1)
+    background.fillRoundedRect(-width / 2, -height / 2, width, height, 8)
+    background.strokeRoundedRect(-width / 2, -height / 2, width, height, 8)
+
+    // Draw the speech bubble tail.
+    background.fillTriangle(
+      -7,
+      height / 2 - 1,
+      7,
+      height / 2 - 1,
+      0,
+      height / 2 + 8,
+    )
+    background.lineBetween(-7, height / 2 - 1, 0, height / 2 + 8)
+    background.lineBetween(0, height / 2 + 8, 7, height / 2 - 1)
+
+    // Add the background and text to the bubble.
+    bubble.add([background, text])
+
+    // Attach the bubble to the player's character.
+    character.add(bubble)
+
+    // Track the player's active chat bubble.
+    this.chatBubbles.set(sessionId, bubble)
+
+    // Calculate display duration based on message length.
+    const displayDuration = Phaser.Math.Clamp(
+      3000 + message.length * 60,
+      4000,
+      12000,
+    )
+
+    // Remove the chat bubble after the calculated duration.
+    this.time.delayedCall(displayDuration, () => {
+      bubble.destroy()
+
+      // Only remove the entry if it still belongs to this bubble.
+      if (this.chatBubbles.get(sessionId) === bubble) {
+        this.chatBubbles.delete(sessionId)
+      }
     })
   }
 
@@ -215,6 +302,21 @@ export default class TownScene extends Phaser.Scene {
 
     // Listen for synchronized player updates.
     this.room.onStateChange(syncPlayers)
+
+    // Listen for chat messages received from other players.
+    this.room.onMessage('chat', (message: ChatMessage) => {
+      // Find the character belonging to the player who sent the message.
+      const character =
+        message.sessionId === this.room.sessionId
+          ? this.player
+          : this.remotePlayers.get(message.sessionId)
+
+      // Display the message above the character if they exist.
+      if (character) {
+        this.showChatBubble(message.sessionId, character, message.text)
+      }
+      console.log('Received chat message:', message)
+    })
 
     // Synchronize the initial room state.
     syncPlayers()
