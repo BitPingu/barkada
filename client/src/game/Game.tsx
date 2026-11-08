@@ -25,7 +25,7 @@ class TownScene extends Phaser.Scene {
   private playerTargets = new Map<string, { x: number; y: number }>()
 
   // Stores the circle displayed when the player clicks somewhere to move.
-  private destinationMarker?: Phaser.GameObjects.Arc
+  private destinationMarker?: Phaser.GameObjects.Container
 
   // Initialize the scene.
   constructor() {
@@ -44,80 +44,109 @@ class TownScene extends Phaser.Scene {
     // Create placeholder human character
     const player = this.add.container(x, y)
 
-    // Graphics object
-    const character = this.add.graphics()
+    const body = this.add.graphics()
+    const arms = this.add.container(0, 0)
+    const legs = this.add.container(0, 0)
 
-    // Legs
-    character.fillStyle(0x26384b)
-    character.fillRoundedRect(-8, -3, 7, 17, 3)
-    character.fillRoundedRect(1, -3, 7, 17, 3)
+    const leftArm = this.add.graphics() as Phaser.GameObjects.Graphics
+    const rightArm = this.add.graphics() as Phaser.GameObjects.Graphics
 
-    // Shoes
-    character.fillStyle(0x59402e)
-    character.fillEllipse(-5, 14, 13, 7)
-    character.fillEllipse(5, 14, 13, 7)
+    const leftLeg = this.add.graphics() as Phaser.GameObjects.Graphics
+    const rightLeg = this.add.graphics() as Phaser.GameObjects.Graphics
 
-    // Arms
-    character.fillStyle(0x3979b8)
-    character.fillRoundedRect(-17, -23, 9, 22, 5)
-    character.fillRoundedRect(8, -23, 9, 22, 5)
+    // Draw the left leg.
+    leftLeg.fillStyle(0x26384b)
+    leftLeg.fillRoundedRect(-8, -3, 7, 17, 3)
 
-    // Hands
-    character.fillStyle(0xe8b18b)
-    character.fillCircle(-12.5, -2, 5)
-    character.fillCircle(12.5, -2, 5)
+    // Draw the left shoe.
+    leftLeg.fillStyle(0x59402e)
+    leftLeg.fillEllipse(-5, 14, 13, 7)
+
+    // Draw the right leg.
+    rightLeg.fillStyle(0x26384b)
+    rightLeg.fillRoundedRect(1, -3, 7, 17, 3)
+
+    // Draw the right shoe.
+    rightLeg.fillStyle(0x59402e)
+    rightLeg.fillEllipse(5, 14, 13, 7)
+
+    // Add both legs to the legs container.
+    legs.add([leftLeg, rightLeg])
+
+    // Position the left arm at the shoulder.
+    leftArm.setPosition(-12.5, -23)
+
+    // Draw the left arm and hand.
+    leftArm.fillStyle(0x3979b8)
+    leftArm.fillRoundedRect(-4.5, 0, 9, 22, 5)
+
+    leftArm.fillStyle(0xe8b18b)
+    leftArm.fillCircle(0, 21, 5)
+
+    // Position the right arm at the shoulder.
+    rightArm.setPosition(12.5, -23)
+
+    // Draw the right arm and hand.
+    rightArm.fillStyle(0x3979b8)
+    rightArm.fillRoundedRect(-4.5, 0, 9, 22, 5)
+
+    rightArm.fillStyle(0xe8b18b)
+    rightArm.fillCircle(0, 21, 5)
+
+    // Add both arms to the arms container.
+    arms.add([leftArm, rightArm])
 
     // Small body
-    character.fillStyle(0x3979b8)
-    character.fillRoundedRect(-11, -27, 22, 29, 8)
+    body.fillStyle(0x3979b8)
+    body.fillRoundedRect(-11, -27, 22, 29, 8)
 
     // Neck
-    character.fillStyle(0xe8b18b)
-    character.fillRoundedRect(-5, -34, 10, 10, 3)
+    body.fillStyle(0xe8b18b)
+    body.fillRoundedRect(-5, -34, 10, 10, 3)
 
     // Ears
-    character.fillStyle(0xe8b18b)
-    character.fillCircle(-19, -45, 5)
-    character.fillCircle(19, -45, 5)
+    body.fillStyle(0xe8b18b)
+    body.fillCircle(-19, -45, 5)
+    body.fillCircle(19, -45, 5)
 
     // Oversized head
-    character.fillStyle(0xe8b18b)
-    character.fillCircle(0, -48, 22)
+    body.fillStyle(0xe8b18b)
+    body.fillCircle(0, -48, 22)
 
     // Hair
-    character.fillStyle(0x38251b)
-    character.fillEllipse(0, -62, 40, 21)
-    character.fillEllipse(-14, -56, 14, 19)
-    character.fillEllipse(14, -56, 14, 19)
+    body.fillStyle(0x38251b)
+    body.fillEllipse(0, -62, 40, 21)
+    body.fillEllipse(-14, -56, 14, 19)
+    body.fillEllipse(14, -56, 14, 19)
 
     // Hair fringe
-    character.fillTriangle(-15, -55, 0, -49, -5, -61)
-    character.fillTriangle(0, -55, 14, -49, 8, -62)
+    body.fillTriangle(-15, -55, 0, -49, -5, -61)
+    body.fillTriangle(0, -55, 14, -49, 8, -62)
 
     // Eyes
-    character.fillStyle(0xffffff)
-    character.fillEllipse(-8, -46, 8, 11)
-    character.fillEllipse(8, -46, 8, 11)
+    body.fillStyle(0xffffff)
+    body.fillEllipse(-8, -46, 8, 11)
+    body.fillEllipse(8, -46, 8, 11)
 
-    character.fillStyle(0x26384b)
-    character.fillCircle(-8, -45, 3)
-    character.fillCircle(8, -45, 3)
+    body.fillStyle(0x26384b)
+    body.fillCircle(-8, -45, 3)
+    body.fillCircle(8, -45, 3)
 
     // Eye highlights
-    character.fillStyle(0xffffff)
-    character.fillCircle(-9, -47, 1.5)
-    character.fillCircle(7, -47, 1.5)
+    body.fillStyle(0xffffff)
+    body.fillCircle(-9, -47, 1.5)
+    body.fillCircle(7, -47, 1.5)
 
     // Blush
-    character.fillStyle(0xe98b83, 0.6)
-    character.fillEllipse(-14, -37, 7, 4)
-    character.fillEllipse(14, -37, 7, 4)
+    body.fillStyle(0xe98b83, 0.6)
+    body.fillEllipse(-14, -37, 7, 4)
+    body.fillEllipse(14, -37, 7, 4)
 
     // Small smile
-    character.lineStyle(1.5, 0x8c493c)
-    character.beginPath()
-    character.arc(0, -36, 3, 0.2, Math.PI - 0.2, false)
-    character.strokePath()
+    body.lineStyle(1.5, 0x8c493c)
+    body.beginPath()
+    body.arc(0, -36, 3, 0.2, Math.PI - 0.2, false)
+    body.strokePath()
 
     // Display the player's name above their character.
     const nameLabel = this.add.text(0, 30, name, {
@@ -129,16 +158,56 @@ class TownScene extends Phaser.Scene {
       align: 'center',
     })
 
-    // Center the name label above the character.
+    // Center the name label below the character.
     nameLabel.setOrigin(0.5, 0.5)
 
-    // Add the character and name label to the player container.
-    player.add([character, nameLabel])
+    // Assemble the player character.
+    player.add([legs, body, arms, nameLabel])
 
     // Set the player's rendering depth.
     player.setDepth(y)
 
     return player
+  }
+
+  // Animates the player's limbs while walking.
+  private startWalkingAnimation(character: Phaser.GameObjects.Container) {
+    const legs = character.getAt(0) as Phaser.GameObjects.Container
+    const arms = character.getAt(2) as Phaser.GameObjects.Container
+
+    const leftLeg = legs.getAt(0) as Phaser.GameObjects.Graphics
+    const rightLeg = legs.getAt(1) as Phaser.GameObjects.Graphics
+
+    const leftArm = arms.getAt(0) as Phaser.GameObjects.Graphics
+    const rightArm = arms.getAt(1) as Phaser.GameObjects.Graphics
+
+    // Stop any previous limb animations.
+    this.tweens.killTweensOf([leftLeg, rightLeg, leftArm, rightArm])
+
+    // Reset limbs to their idle positions.
+    leftLeg.setAngle(0)
+    rightLeg.setAngle(0)
+    leftArm.setAngle(0)
+    rightArm.setAngle(0)
+
+    // Swing opposite limbs in alternating directions.
+    this.tweens.add({
+      targets: [leftLeg, rightArm],
+      angle: -12,
+      duration: 180,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    })
+
+    this.tweens.add({
+      targets: [rightLeg, leftArm],
+      angle: 12,
+      duration: 180,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    })
   }
 
   // Animates a character toward a synchronized position.
@@ -161,11 +230,14 @@ class TownScene extends Phaser.Scene {
     const direction = x < character.x ? -1 : 1
 
     // Flip only the character graphics.
-    const playerGraphics = character.getAt(0) as Phaser.GameObjects.Graphics
-    playerGraphics.setScale(direction, 1)
+    const body = character.getAt(0) as Phaser.GameObjects.Graphics
+    body.setScale(direction, 1)
 
     // Stop any previous movement.
     this.tweens.killTweensOf(character)
+
+    // Start the walking animation.
+    this.startWalkingAnimation(character)
 
     // Animate toward the synchronized position.
     this.tweens.add({
@@ -178,11 +250,22 @@ class TownScene extends Phaser.Scene {
         character.setDepth(character.y)
       },
       onComplete: () => {
-        // Remove the destination marker when the local player arrives.
-        if (character === this.player) {
-          this.destinationMarker?.destroy()
-          this.destinationMarker = undefined
-        }
+        // Stop the walking animation.
+        const legs = character.getAt(0) as Phaser.GameObjects.Container
+        const arms = character.getAt(2) as Phaser.GameObjects.Container
+
+        const leftLeg = legs.getAt(0) as Phaser.GameObjects.Graphics
+        const rightLeg = legs.getAt(1) as Phaser.GameObjects.Graphics
+        const leftArm = arms.getAt(0) as Phaser.GameObjects.Graphics
+        const rightArm = arms.getAt(1) as Phaser.GameObjects.Graphics
+
+        this.tweens.killTweensOf([leftLeg, rightLeg, leftArm, rightArm])
+
+        // Return limbs to their idle positions.
+        leftLeg.setAngle(0)
+        rightLeg.setAngle(0)
+        leftArm.setAngle(0)
+        rightArm.setAngle(0)
       },
     })
   }
@@ -341,10 +424,41 @@ class TownScene extends Phaser.Scene {
       playerGraphics.setScale(direction, 1)
 
       // Remove the previous destination marker.
-      this.destinationMarker?.destroy()
+      if (this.destinationMarker) {
+        this.tweens.killTweensOf(this.destinationMarker)
+        this.destinationMarker.destroy()
+      }
 
-      // Show the new destination marker.
-      this.destinationMarker = this.add.circle(x, y, 6, 0x3498db, 0.6)
+      // Create a new destination marker.
+      const marker = this.add.container(x, y)
+
+      // Outer ring.
+      const ring = this.add.circle(0, 0, 18, 0x6cc8ff, 0)
+      ring.setStrokeStyle(2, 0x6cc8ff, 0.8)
+
+      marker.add([ring])
+      marker.setDepth(y - 1)
+
+      this.destinationMarker = marker
+
+      // Keep the ring at full size briefly.
+      this.time.delayedCall(100, () => {
+        // Shrink and fade out the marker.
+        this.tweens.add({
+          targets: marker,
+          scale: 0,
+          alpha: 0,
+          duration: 400,
+          ease: 'Sine.easeIn',
+          onComplete: () => {
+            marker.destroy()
+
+            if (this.destinationMarker === marker) {
+              this.destinationMarker = undefined
+            }
+          },
+        })
+      })
 
       // Send the movement request to the server.
       this.room.send('move', { x, y })
