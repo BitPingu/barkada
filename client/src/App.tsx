@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import type { Room } from '@colyseus/sdk'
 import client from './game/colyseus'
+import './App.css'
 
 // Lazy-load the Phaser game component.
 // This prevents the game engine from being loaded until needed.
@@ -57,11 +58,13 @@ function App() {
         {/* Load the game separately from the app bundle
           after the room connection is established. */}
         {room ? (
-          <Suspense fallback={<div>Loading Town...</div>}>
+          <Suspense
+            fallback={<div className="loading-screen">Loading Town...</div>}
+          >
             <Game room={room} />
           </Suspense>
         ) : (
-          <div>Connecting to Barkada...</div>
+          <div className="loading-screen">Connecting to Barkada...</div>
         )}
       </div>
     </main>
