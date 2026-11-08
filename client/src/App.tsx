@@ -103,6 +103,35 @@ function App() {
           <div className="loading-screen">Connecting to Barkada...</div>
         )}
       </div>
+
+      <div className="chat-bar">
+        <button className="chat-action" aria-label="Emojis" title="Emojis">
+          ☺
+        </button>
+
+        <input
+          type="text"
+          placeholder="Say something..."
+          aria-label="Chat message"
+          disabled={!room}
+        />
+
+        <button className="chat-action send-button" disabled={!room}>
+          Send
+        </button>
+
+        <button className="chat-action" aria-label="Players" title="Players">
+          👥
+        </button>
+
+        <button className="chat-action" aria-label="Friends" title="Friends">
+          👤
+        </button>
+
+        <button className="chat-action" aria-label="Settings" title="Settings">
+          ⚙
+        </button>
+      </div>
     </main>
   )
 }
