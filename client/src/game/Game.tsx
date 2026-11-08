@@ -27,6 +27,7 @@ export default function Game({ room }: GameProps) {
       height: 540,
       parent: gameRef.current, // HTML element to contain the canvas
       backgroundColor: '#ccecff',
+      antialias: true,
       scene: [], // scenes to load
       scale: {
         mode: Phaser.Scale.FIT,

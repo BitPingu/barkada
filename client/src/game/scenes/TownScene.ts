@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
 import type { Room } from '@colyseus/sdk'
-import type { ChatMessage, MyRoomState } from '../types'
+import type { ChatMessage, EmojiMessage, MyRoomState } from '../types'
 import {
   createPlayerCharacter,
   startWalkingAnimation,
@@ -17,8 +17,8 @@ export default class TownScene extends Phaser.Scene {
   // Stores characters belonging to other players.
   private remotePlayers = new Map<string, Phaser.GameObjects.Container>()
 
-  // Tracks active chat bubbles for each player.
-  private chatBubbles = new Map<string, Phaser.GameObjects.Container>()
+  // Tracks the active speech bubble for each player.
+  private activeBubbles = new Map<string, Phaser.GameObjects.Container>()
 
   // Stores the last synchronized destination for each player.
   private playerTargets = new Map<string, { x: number; y: number }>()
@@ -105,7 +105,7 @@ export default class TownScene extends Phaser.Scene {
     message: string,
   ) {
     // Remove the player's previous chat bubble, if one exists.
-    const previousBubble = this.chatBubbles.get(sessionId)
+    const previousBubble = this.activeBubbles.get(sessionId)
 
     if (previousBubble) {
       previousBubble.destroy()
@@ -162,7 +162,7 @@ export default class TownScene extends Phaser.Scene {
     character.add(bubble)
 
     // Track the player's active chat bubble.
-    this.chatBubbles.set(sessionId, bubble)
+    this.activeBubbles.set(sessionId, bubble)
 
     // Calculate display duration based on message length.
     const displayDuration = Phaser.Math.Clamp(
@@ -176,8 +176,75 @@ export default class TownScene extends Phaser.Scene {
       bubble.destroy()
 
       // Only remove the entry if it still belongs to this bubble.
-      if (this.chatBubbles.get(sessionId) === bubble) {
-        this.chatBubbles.delete(sessionId)
+      if (this.activeBubbles.get(sessionId) === bubble) {
+        this.activeBubbles.delete(sessionId)
+      }
+    })
+  }
+
+  // Display an emoji above a player's character.
+  private showEmojiBubble(
+    sessionId: string,
+    character: Phaser.GameObjects.Container,
+    emoji: string,
+  ) {
+    // Remove the player's previous emoji bubble, if one exists.
+    const previousBubble = this.activeBubbles.get(sessionId)
+
+    if (previousBubble) {
+      previousBubble.destroy()
+    }
+
+    // Create a container above the player's character.
+    const bubble = this.add.container(0, -90)
+
+    // Create the emoji text.
+    const emojiText = this.add.text(0, 0, emoji, {
+      fontSize: '28px',
+      fontFamily: 'Arial',
+      resolution: 2,
+    })
+
+    emojiText.setOrigin(0.5)
+
+    // Define the bubble dimensions.
+    const padding = 8
+    const width = emojiText.width + padding * 2
+    const height = emojiText.height + padding * 2
+
+    // Create the speech bubble background.
+    const background = this.add.graphics()
+    background.fillStyle(0xffffff, 1)
+    background.lineStyle(2, 0x526477, 1)
+    background.fillRoundedRect(-width / 2, -height / 2, width, height, 8)
+    background.strokeRoundedRect(-width / 2, -height / 2, width, height, 8)
+
+    // Draw the speech bubble tail.
+    background.fillTriangle(
+      -7,
+      height / 2 - 1,
+      7,
+      height / 2 - 1,
+      0,
+      height / 2 + 8,
+    )
+    background.lineBetween(-7, height / 2 - 1, 0, height / 2 + 8)
+    background.lineBetween(0, height / 2 + 8, 7, height / 2 - 1)
+
+    // Add the background and emoji to the bubble.
+    bubble.add([background, emojiText])
+    character.add(bubble)
+
+    // Track the player's active emoji bubble.
+    this.activeBubbles.set(sessionId, bubble)
+
+    // Remove the emoji bubble after 2 seconds.
+    this.time.delayedCall(2000, () => {
+      bubble.destroy()
+
+      // Only remove the entry if it still belongs to this bubble.
+      if (this.activeBubbles.get(sessionId) === bubble) {
+        this.activeBubbles.delete(sessionId)
       }
     })
   }
@@ -316,6 +383,20 @@ export default class TownScene extends Phaser.Scene {
         this.showChatBubble(message.sessionId, character, message.text)
       }
       console.log('Received chat message:', message)
+    })
+
+    // Listen for emoji messages received from other players.
+    this.room.onMessage('emoji', (message: EmojiMessage) => {
+      // Find the character belonging to the player who sent the emoji.
+      const character =
+        message.sessionId === this.room.sessionId
+          ? this.player
+          : this.remotePlayers.get(message.sessionId)
+
+      // Display the emoji above the character if they exist.
+      if (character) {
+        this.showEmojiBubble(message.sessionId, character, message.emoji)
+      }
     })
 
     // Synchronize the initial room state.

@@ -145,6 +145,28 @@ function App() {
     setChatInput('')
   }
 
+  // Send an emoji to the server.
+  function sendEmoji(emoji: string) {
+    // Don't send emojis when disconnected or cooling down.
+    if (!room || isChatCoolingDown) {
+      return
+    }
+
+    // Send the selected emoji to the server.
+    room.send('emoji', { emoji })
+
+    // Activate the chat cooldown.
+    setIsChatCoolingDown(true)
+
+    // Re-enable chat after 0.6 seconds.
+    setTimeout(() => {
+      setIsChatCoolingDown(false)
+    }, 600)
+
+    // Close the emoji picker.
+    setIsEmojiPickerOpen(false)
+  }
+
   return (
     <main className="game-page">
       <header className="game-header">
@@ -204,9 +226,8 @@ function App() {
                 <button
                   key={emoji}
                   className="emoji-option"
-                  onClick={() => {
-                    // We'll send the emoji in a later step.
-                  }}
+                  onClick={() => sendEmoji(emoji)}
+                  disabled={isChatCoolingDown}
                 >
                   {emoji}
                 </button>

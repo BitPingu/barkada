@@ -18,3 +18,10 @@ export interface ChatMessage {
   name: string
   text: string
 }
+
+// Represents an emoji message received from the server.
+export interface EmojiMessage {
+  sessionId: string
+  name: string
+  emoji: string
+}
