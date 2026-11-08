@@ -1,4 +1,5 @@
-import { lazy, Suspense, useEffect } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
+import type { Room } from '@colyseus/sdk'
 import client from './game/colyseus'
 
 // Lazy-load the Phaser game component.
@@ -7,31 +8,32 @@ const Game = lazy(() => import('./game/Game'))
 
 // Render application and Game component
 function App() {
+  // Store the active Colyseus room connection.
+  const [room, setRoom] = useState<Room | null>(null)
+
   // Connect to a Colyseus room when the React component mounts.
   useEffect(() => {
     // Track whether this effect instance is still active.
     let active = true
+    let joinedRoom: Room | null = null
 
     async function joinRoom() {
       try {
         // Join an existing room or create one if none exists.
-        const room = await client.joinOrCreate('my_room')
+        const connection = await client.joinOrCreate('my_room')
 
-        // Ignore the connection if this effect was cleaned up.
+        // Leave if this effect has already been cleaned up.
         if (!active) {
-          room.leave()
+          connection.leave()
           return
         }
 
-        // Log the room and session information for testing.
-        console.log('Joined room:', room.roomId)
-        console.log('Session ID:', room.sessionId)
+        joinedRoom = connection
+        setRoom(connection)
 
-        // Listen for changes to the synchronized room state.
-        room.onStateChange((state) => {
-          console.log('Players in room:', state.players.size)
-          console.log('Player data:', state.players)
-        })
+        // Log the room and session information for testing.
+        console.log('Joined room:', connection.roomId)
+        console.log('Session ID:', connection.sessionId)
       } catch (error) {
         // Log any errors encountered while connecting.
         console.error('Failed to join room:', error)
@@ -43,17 +45,24 @@ function App() {
     // Clean up the connection when the effect is removed.
     return () => {
       active = false
+      joinedRoom?.leave()
     }
   }, [])
 
   return (
     <main className="game-page">
       <h1>Welcome to Barkada</h1>
+
       <div className="game-container">
-        {/* Load game separately from app bundle */}
-        <Suspense fallback={<div>Loading game...</div>}>
-          <Game />
-        </Suspense>
+        {/* Load the game separately from the app bundle
+          after the room connection is established. */}
+        {room ? (
+          <Suspense fallback={<div>Loading Town...</div>}>
+            <Game room={room} />
+          </Suspense>
+        ) : (
+          <div>Connecting to Barkada...</div>
+        )}
       </div>
     </main>
   )

@@ -1,22 +1,177 @@
 import { useEffect, useRef } from 'react'
 import Phaser from 'phaser'
+import type { Room } from '@colyseus/sdk'
+import type { MyRoomState } from './types'
 
-// Initializes Phaser and creates the game canvas
+// Defines the props passed from React.
+interface GameProps {
+  room: Room<MyRoomState> // require Colyseus room
+}
 
-// Creates and manages the town environment
+// Initializes Phaser and creates the game canvas.
+
+// Creates and manages the town environment.
 class TownScene extends Phaser.Scene {
-  // Stores a reference to the player's character
+  // Stores a reference to the player's character.
   private player!: Phaser.GameObjects.Container
 
-  // Stores the circle displayed when the player clicks somewhere to move
+  // Stores the Colyseus room connection.
+  private room!: Room<MyRoomState>
+
+  // Stores characters belonging to other players.
+  private remotePlayers = new Map<string, Phaser.GameObjects.Container>()
+
+  // Stores the last synchronized destination for each player.
+  private playerTargets = new Map<string, { x: number; y: number }>()
+
+  // Stores the circle displayed when the player clicks somewhere to move.
   private destinationMarker?: Phaser.GameObjects.Arc
 
-  // Initialize the scene
+  // Initialize the scene.
   constructor() {
     super('TownScene')
   }
 
-  // Automatically called when the scene starts
+  // Receives the Colyseus room connection.
+  init(data: { room: Room<MyRoomState> }) {
+    // access to room connection
+    this.room = data.room
+    console.log('Connected to room:', data.room.roomId)
+  }
+
+  // Creates a reusable player character.
+  private createPlayerCharacter(x: number, y: number) {
+    // Create placeholder human character
+    const player = this.add.container(x, y)
+
+    // Graphics object
+    const character = this.add.graphics()
+
+    // Legs
+    character.fillStyle(0x26384b)
+    character.fillRoundedRect(-8, -3, 7, 17, 3)
+    character.fillRoundedRect(1, -3, 7, 17, 3)
+
+    // Shoes
+    character.fillStyle(0x59402e)
+    character.fillEllipse(-5, 14, 13, 7)
+    character.fillEllipse(5, 14, 13, 7)
+
+    // Arms
+    character.fillStyle(0x3979b8)
+    character.fillRoundedRect(-17, -23, 9, 22, 5)
+    character.fillRoundedRect(8, -23, 9, 22, 5)
+
+    // Hands
+    character.fillStyle(0xe8b18b)
+    character.fillCircle(-12.5, -2, 5)
+    character.fillCircle(12.5, -2, 5)
+
+    // Small body
+    character.fillStyle(0x3979b8)
+    character.fillRoundedRect(-11, -27, 22, 29, 8)
+
+    // Neck
+    character.fillStyle(0xe8b18b)
+    character.fillRoundedRect(-5, -34, 10, 10, 3)
+
+    // Ears
+    character.fillStyle(0xe8b18b)
+    character.fillCircle(-19, -45, 5)
+    character.fillCircle(19, -45, 5)
+
+    // Oversized head
+    character.fillStyle(0xe8b18b)
+    character.fillCircle(0, -48, 22)
+
+    // Hair
+    character.fillStyle(0x38251b)
+    character.fillEllipse(0, -62, 40, 21)
+    character.fillEllipse(-14, -56, 14, 19)
+    character.fillEllipse(14, -56, 14, 19)
+
+    // Hair fringe
+    character.fillTriangle(-15, -55, 0, -49, -5, -61)
+    character.fillTriangle(0, -55, 14, -49, 8, -62)
+
+    // Eyes
+    character.fillStyle(0xffffff)
+    character.fillEllipse(-8, -46, 8, 11)
+    character.fillEllipse(8, -46, 8, 11)
+
+    character.fillStyle(0x26384b)
+    character.fillCircle(-8, -45, 3)
+    character.fillCircle(8, -45, 3)
+
+    // Eye highlights
+    character.fillStyle(0xffffff)
+    character.fillCircle(-9, -47, 1.5)
+    character.fillCircle(7, -47, 1.5)
+
+    // Blush
+    character.fillStyle(0xe98b83, 0.6)
+    character.fillEllipse(-14, -37, 7, 4)
+    character.fillEllipse(14, -37, 7, 4)
+
+    // Small smile
+    character.lineStyle(1.5, 0x8c493c)
+    character.beginPath()
+    character.arc(0, -36, 3, 0.2, Math.PI - 0.2, false)
+    character.strokePath()
+
+    // Add the Graphics object to the container
+    player.add(character)
+
+    // Set render depth
+    player.setDepth(y)
+
+    return player
+  }
+
+  // Animates a character toward a synchronized position.
+  private moveCharacter(
+    character: Phaser.GameObjects.Container,
+    x: number,
+    y: number,
+  ) {
+    // Calculate distance to the new position.
+    const distance = Phaser.Math.Distance.Between(
+      character.x,
+      character.y,
+      x,
+      y,
+    )
+
+    // Stop if the character is already at the destination.
+    if (distance < 1) return
+
+    // Face the direction of movement.
+    character.setScale(x < character.x ? -1 : 1, 1)
+
+    // Stop any previous movement.
+    this.tweens.killTweensOf(character)
+
+    // Animate toward the synchronized position.
+    this.tweens.add({
+      targets: character,
+      x,
+      y,
+      duration: (distance / 180) * 1000,
+      ease: 'Linear',
+      onUpdate: () => {
+        character.setDepth(character.y)
+      },
+      onComplete: () => {
+        // Remove the destination marker when the local player arrives.
+        if (character === this.player) {
+          this.destinationMarker?.destroy()
+          this.destinationMarker = undefined
+        }
+      },
+    })
+  }
+
+  // Automatically called when the scene starts.
   create() {
     // Sky background
     this.add.rectangle(480, 270, 960, 540, 0x9bd8f5)
@@ -72,90 +227,75 @@ class TownScene extends Phaser.Scene {
     buildings.fillStyle(0x658b58)
     buildings.fillTriangle(700, 55, 790, -5, 880, 55)
 
-    // Create placeholder human character
-    this.player = this.add.container(480, 320)
+    // Create the local player.
+    this.player = this.createPlayerCharacter(480, 320)
 
-    // Graphics object
-    const character = this.add.graphics()
+    // Synchronize remote players with the Colyseus room.
+    const syncPlayers = () => {
+      // Keep track of remote players currently in the room.
+      const currentSessionIds = new Set<string>()
 
-    // Legs
-    character.fillStyle(0x26384b)
-    character.fillRoundedRect(-8, -3, 7, 17, 3)
-    character.fillRoundedRect(1, -3, 7, 17, 3)
+      // Iterate through all synchronized players.
+      this.room.state.players.forEach((player, sessionId) => {
+        let character: Phaser.GameObjects.Container
 
-    // Shoes
-    character.fillStyle(0x59402e)
-    character.fillEllipse(-5, 14, 13, 7)
-    character.fillEllipse(5, 14, 13, 7)
+        // Use the existing character for the local player.
+        if (sessionId === this.room.sessionId) {
+          character = this.player
+        } else {
+          currentSessionIds.add(sessionId)
 
-    // Arms
-    character.fillStyle(0x3979b8)
-    character.fillRoundedRect(-17, -23, 9, 22, 5)
-    character.fillRoundedRect(8, -23, 9, 22, 5)
+          // Look for an existing remote character.
+          let remoteCharacter = this.remotePlayers.get(sessionId)
 
-    // Hands
-    character.fillStyle(0xe8b18b)
-    character.fillCircle(-12.5, -2, 5)
-    character.fillCircle(12.5, -2, 5)
+          // Create a character if one doesn't exist.
+          if (!remoteCharacter) {
+            remoteCharacter = this.createPlayerCharacter(player.x, player.y)
 
-    // Small body
-    character.fillStyle(0x3979b8)
-    character.fillRoundedRect(-11, -27, 22, 29, 8)
+            this.remotePlayers.set(sessionId, remoteCharacter)
+          }
 
-    // Neck
-    character.fillStyle(0xe8b18b)
-    character.fillRoundedRect(-5, -34, 10, 10, 3)
+          character = remoteCharacter
+        }
 
-    // Ears
-    character.fillStyle(0xe8b18b)
-    character.fillCircle(-19, -45, 5)
-    character.fillCircle(19, -45, 5)
+        // Check whether the player's destination has changed.
+        const previousTarget = this.playerTargets.get(sessionId)
 
-    // Oversized head
-    character.fillStyle(0xe8b18b)
-    character.fillCircle(0, -48, 22)
+        if (
+          !previousTarget ||
+          previousTarget.x !== player.x ||
+          previousTarget.y !== player.y
+        ) {
+          this.playerTargets.set(sessionId, {
+            x: player.x,
+            y: player.y,
+          })
 
-    // Hair
-    character.fillStyle(0x38251b)
-    character.fillEllipse(0, -62, 40, 21)
-    character.fillEllipse(-14, -56, 14, 19)
-    character.fillEllipse(14, -56, 14, 19)
+          // Animate toward the synchronized position.
+          this.moveCharacter(character, player.x, player.y)
+        }
+      })
 
-    // Hair fringe
-    character.fillTriangle(-15, -55, 0, -49, -5, -61)
+      // Remove characters belonging to players who left.
+      for (const [sessionId, character] of this.remotePlayers) {
+        if (!currentSessionIds.has(sessionId)) {
+          character.destroy()
+          this.remotePlayers.delete(sessionId)
+          this.playerTargets.delete(sessionId)
+        }
+      }
+    }
 
-    character.fillTriangle(0, -55, 14, -49, 8, -62)
+    // Listen for synchronized player updates.
+    this.room.onStateChange(syncPlayers)
 
-    // Eyes
-    character.fillStyle(0xffffff)
-    character.fillEllipse(-8, -46, 8, 11)
-    character.fillEllipse(8, -46, 8, 11)
+    // Synchronize the initial room state.
+    syncPlayers()
 
-    character.fillStyle(0x26384b)
-    character.fillCircle(-8, -45, 3)
-    character.fillCircle(8, -45, 3)
-
-    // Eye highlights
-    character.fillStyle(0xffffff)
-    character.fillCircle(-9, -47, 1.5)
-    character.fillCircle(7, -47, 1.5)
-
-    // Blush
-    character.fillStyle(0xe98b83, 0.6)
-    character.fillEllipse(-14, -37, 7, 4)
-    character.fillEllipse(14, -37, 7, 4)
-
-    // Small smile
-    character.lineStyle(1.5, 0x8c493c)
-    character.beginPath()
-    character.arc(0, -36, 3, 0.2, Math.PI - 0.2, false)
-    character.strokePath()
-
-    // Add the Graphics object to the container
-    this.player.add(character)
-
-    // Render depth
-    this.player.setDepth(this.player.y)
+    // Clean up room listeners when this scene shuts down.
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.room.removeAllListeners()
+    })
 
     // Point-and-click movement
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
@@ -163,7 +303,7 @@ class TownScene extends Phaser.Scene {
       const x = Phaser.Math.Clamp(pointer.worldX, 25, 935)
       const y = Phaser.Math.Clamp(pointer.worldY, 160, 490)
 
-      // Distance between player position and destination
+      // Calculate distance to destination
       const distance = Phaser.Math.Distance.Between(
         this.player.x,
         this.player.y,
@@ -171,70 +311,64 @@ class TownScene extends Phaser.Scene {
         y,
       )
 
-      // Stop
+      // Stop if already at destination
       if (distance < 5) return
 
-      // Face the direction of movement
+      // Face the direction of the destination.
       this.player.setScale(x < this.player.x ? -1 : 1, 1)
 
-      // Remove previous movement
-      this.tweens.killTweensOf(this.player)
-
-      // Remove previous destination marker
+      // Remove the previous destination marker.
       this.destinationMarker?.destroy()
 
-      // Show destination marker
+      // Show the new destination marker.
       this.destinationMarker = this.add.circle(x, y, 6, 0x3498db, 0.6)
 
-      // Walk to destination
-      this.tweens.add({
-        targets: this.player, // to animate
-        x, // destination horizontal position
-        y, // destination vertical position
-        duration: (distance / 180) * 1000, // 180 pixels per second
-        ease: 'Linear', // consistent speed
-        onUpdate: () => {
-          // update depth as it moves
-          this.player.setDepth(this.player.y)
-        },
-        onComplete: () => {
-          // remove destination marker and clear reference
-          this.destinationMarker?.destroy()
-          this.destinationMarker = undefined
-        },
-      })
+      // Send the movement request to the server.
+      this.room.send('move', { x, y })
     })
   }
 }
 
-// Creates the Phaser game
-export default function Game() {
-  // Reference to div
+// Creates the Phaser game.
+export default function Game({ room }: GameProps) {
+  // Reference to div.
   const gameRef = useRef<HTMLDivElement>(null)
 
-  // Runs after rendering
+  // Runs after rendering.
   useEffect(() => {
     if (!gameRef.current) return
 
-    // Create Phaser game instance on a canvas
+    let active = true
+
+    // Create Phaser game instance on a canvas.
     const game = new Phaser.Game({
       type: Phaser.AUTO, // rendering method
       width: 960,
       height: 540,
       parent: gameRef.current, // HTML element to contain the canvas
       backgroundColor: '#ccecff',
-      scene: [TownScene], // scenes to load
+      scene: [], // scenes to load
       scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
       },
     })
 
-    // Cleanup
+    // Wait until Phaser is ready before adding the scene.
+    game.events.once(Phaser.Core.Events.READY, () => {
+      if (!active) return
+
+      // Pass the Colyseus room connection to the scene.
+      game.scene.add('TownScene', TownScene, true, { room })
+    })
+
+    // Clean up.
     return () => {
+      active = false
+      room.removeAllListeners()
       game.destroy(true)
     }
-  }, [])
+  }, [room])
 
   // HTML element Phaser uses as parent
   return <div ref={gameRef} />

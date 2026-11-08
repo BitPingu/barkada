@@ -11,6 +11,29 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
 
   onCreate(options: any) {
     console.log('Room created:', this.roomId)
+
+    // Handle player movement requests.
+    this.onMessage('move', (client, message: { x: number; y: number }) => {
+      // Find the player associated with the client.
+      const player = this.state.players.get(client.sessionId)
+
+      // Ignore requests from clients without a player entry.
+      if (!player) return
+
+      // Validate the requested coordinates.
+      if (
+        typeof message.x !== 'number' ||
+        typeof message.y !== 'number' ||
+        !Number.isFinite(message.x) ||
+        !Number.isFinite(message.y)
+      ) {
+        return
+      }
+
+      // Clamp coordinates to the game boundaries.
+      player.x = Math.max(25, Math.min(935, message.x))
+      player.y = Math.max(160, Math.min(490, message.y))
+    })
   }
 
   // When a player joins.
