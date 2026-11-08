@@ -26,6 +26,12 @@ function App() {
         // Log the room and session information for testing.
         console.log('Joined room:', room.roomId)
         console.log('Session ID:', room.sessionId)
+
+        // Listen for changes to the synchronized room state.
+        room.onStateChange((state) => {
+          console.log("Players in room:", state.players.size);
+          console.log("Player data:", state.players);
+        });
       } catch (error) {
         // Log any errors encountered while connecting.
         console.error('Failed to join room:', error)
