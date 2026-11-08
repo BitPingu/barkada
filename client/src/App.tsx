@@ -18,6 +18,9 @@ function App() {
   // Store the message currently being typed.
   const [chatInput, setChatInput] = useState('')
 
+  // Tracks whether the chat is currently on cooldown.
+  const [isChatCoolingDown, setIsChatCoolingDown] = useState(false)
+
   // Connect to a Colyseus room when the React component mounts.
   useEffect(() => {
     // Track whether this effect instance is still active.
@@ -72,13 +75,21 @@ function App() {
   function sendMessage() {
     const text = chatInput.trim()
 
-    // Don't send empty messages or messages when disconnected.
-    if (!text || !room) {
+    // Don't send empty messages or messages when disconnected or cooling down.
+    if (!text || !room || isChatCoolingDown) {
       return
     }
 
     // Send the message to the Colyseus room.
     room.send('chat', { text })
+
+    // Activate the chat cooldown.
+    setIsChatCoolingDown(true)
+
+    // Re-enable chat after 1.1 seconds.
+    setTimeout(() => {
+      setIsChatCoolingDown(false)
+    }, 600)
 
     // Clear the input after sending.
     setChatInput('')
@@ -149,7 +160,7 @@ function App() {
         <button
           className="chat-action send-button"
           onClick={sendMessage}
-          disabled={!room || !chatInput.trim()}
+          disabled={!room || !chatInput.trim() || isChatCoolingDown}
         >
           Send
         </button>

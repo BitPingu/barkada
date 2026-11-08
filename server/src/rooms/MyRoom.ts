@@ -9,6 +9,9 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
   // Initialize the synchronized room state.
   state = new MyRoomState()
 
+  // Tracks the last time each player sent a chat message.
+  private lastChatMessage = new Map<string, number>()
+
   onCreate(options: any) {
     console.log('Room created:', this.roomId)
 
@@ -53,6 +56,17 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
         return
       }
 
+      // Enforce a 1-second cooldown between chat messages.
+      const now = Date.now()
+      const lastMessage = this.lastChatMessage.get(client.sessionId) ?? 0
+
+      if (now - lastMessage < 500) {
+        return
+      }
+
+      // Update the player's last message timestamp.
+      this.lastChatMessage.set(client.sessionId, now)
+
       // Broadcast the message to all players in the room.
       this.broadcast('chat', {
         sessionId: client.sessionId,
@@ -84,6 +98,9 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
   onLeave(client: Client, code: CloseCode) {
     // Remove the player from the synchronized room state.
     this.state.players.delete(client.sessionId)
+
+    // Remove the player's chat cooldown when they leave.
+    this.lastChatMessage.delete(client.sessionId)
 
     console.log(client.sessionId, 'left!', code)
   }
