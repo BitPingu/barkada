@@ -1,3 +1,5 @@
+import type { MapSchema } from '@colyseus/schema'
+
 // TypeScript data structures shared by the client-side game code.
 
 // Defines the synchronized data for an individual player.
@@ -9,7 +11,7 @@ export interface PlayerState {
 
 // Defines the shared state of a multiplayer room.
 export interface MyRoomState {
-  players: Map<string, PlayerState>
+  players: MapSchema<PlayerState>
 }
 
 // Represents a chat message received from the server.
