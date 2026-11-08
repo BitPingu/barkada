@@ -12,6 +12,9 @@ function App() {
   // Store the active Colyseus room connection.
   const [room, setRoom] = useState<Room | null>(null)
 
+  // Store the player count
+  const [playerCount, setPlayerCount] = useState(0)
+
   // Connect to a Colyseus room when the React component mounts.
   useEffect(() => {
     // Track whether this effect instance is still active.
@@ -31,6 +34,18 @@ function App() {
 
         joinedRoom = connection
         setRoom(connection)
+
+        // Listen for synchronized room state changes.
+        connection.onStateChange((state) => {
+          const players = state.players
+
+          if (!players) return
+
+          // Update the player count whenever the room changes.
+          setPlayerCount(players.size)
+
+          console.log('Updated player count:', players.size)
+        })
 
         // Log the room and session information for testing.
         console.log('Joined room:', connection.roomId)
@@ -52,7 +67,28 @@ function App() {
 
   return (
     <main className="game-page">
-      <h1>Welcome to Barkada</h1>
+      <header className="game-header">
+        <div className="brand">
+          <div className="brand-mark">B</div>
+          <h1>barkada</h1>
+        </div>
+
+        <div className="connection-status">
+          <span className={room ? 'status-dot connected' : 'status-dot'} />
+          <span>{room ? 'Connected' : 'Connecting...'}</span>
+        </div>
+      </header>
+
+      <div className="room-info">
+        <div className="room-name">
+          <span className="room-indicator" />
+          <span>Town Square</span>
+        </div>
+
+        <div className="room-player-count">
+          {playerCount} {playerCount === 1 ? 'player' : 'players'} online
+        </div>
+      </div>
 
       <div className="game-container">
         {/* Load the game separately from the app bundle

@@ -395,11 +395,6 @@ class TownScene extends Phaser.Scene {
     // Synchronize the initial room state.
     syncPlayers()
 
-    // Clean up room listeners when this scene shuts down.
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.room.removeAllListeners()
-    })
-
     // Point-and-click movement
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       // Get pointer coordinates
@@ -502,7 +497,6 @@ export default function Game({ room }: GameProps) {
     // Clean up.
     return () => {
       active = false
-      room.removeAllListeners()
       game.destroy(true)
     }
   }, [room])

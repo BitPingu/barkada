@@ -11,6 +11,8 @@
   padding: 32px 24px;
 }
 
+/* Header */
+
 .game-header {
   display: flex;
   align-items: center;
@@ -18,10 +20,94 @@
   width: min(1100px, 100%);
 }
 
-.game-header h1 {
-  margin: 0;
-  font-size: 28px;
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
+
+.brand-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: #3978c6;
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.brand h1 {
+  margin: 0;
+  color: #26384b;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+/* Connection status */
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid #d5dee8;
+  border-radius: 20px;
+  background: #ffffff;
+  color: #526477;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e5a23b;
+}
+
+.status-dot.connected {
+  background: #35a66b;
+}
+
+/* Room information */
+
+.room-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: min(1100px, 100%);
+  color: #526477;
+  font-size: 13px;
+}
+
+.room-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: #26384b;
+}
+
+.room-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #35a66b;
+}
+
+.room-player-count {
+  padding: 6px 12px;
+  border: 1px solid #d5dee8;
+  border-radius: 20px;
+  background: #ffffff;
+  font-weight: 600;
+}
+
+/* Game canvas */
 
 .game-container {
   position: relative;
@@ -40,6 +126,8 @@
   height: 100% !important;
 }
 
+/* Loading screen */
+
 .loading-screen {
   position: absolute;
   inset: 0;
@@ -53,13 +141,26 @@
     sans-serif;
 }
 
+/* Responsive layout */
+
 @media (max-width: 600px) {
   .game-page {
-    padding: 20px 12px;
     gap: 16px;
+    padding: 20px 12px;
   }
 
-  .game-header h1 {
+  .brand-mark {
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+  }
+
+  .brand h1 {
     font-size: 22px;
+  }
+
+  .connection-status {
+    padding: 7px 10px;
+    font-size: 12px;
   }
 }
