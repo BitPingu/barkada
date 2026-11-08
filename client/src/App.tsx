@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import type { Room } from '@colyseus/sdk'
 import client from './game/colyseus'
+import type { ChatMessage } from './game/types'
 import './App.css'
 
 // Lazy-load the Phaser game component.
@@ -12,8 +13,14 @@ function App() {
   // Store the active Colyseus room connection.
   const [room, setRoom] = useState<Room | null>(null)
 
-  // Store the player count
+  // Store the player count.
   const [playerCount, setPlayerCount] = useState(0)
+
+  // Store the chat messages received from the server.
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+
+  // Store the message currently being typed.
+  const [chatInput, setChatInput] = useState('')
 
   // Connect to a Colyseus room when the React component mounts.
   useEffect(() => {
@@ -47,6 +54,12 @@ function App() {
           console.log('Updated player count:', players.size)
         })
 
+        // Listen for incoming chat messages from the server.
+        connection.onMessage('chat', (message: ChatMessage) => {
+          console.log('Received chat message:', message)
+          setMessages((previousMessages) => [...previousMessages, message])
+        })
+
         // Log the room and session information for testing.
         console.log('Joined room:', connection.roomId)
         console.log('Session ID:', connection.sessionId)
@@ -64,6 +77,22 @@ function App() {
       joinedRoom?.leave()
     }
   }, [])
+
+  // Send a chat message to the server.
+  function sendMessage() {
+    const text = chatInput.trim()
+
+    // Don't send empty messages or messages when disconnected.
+    if (!text || !room) {
+      return
+    }
+
+    // Send the message to the Colyseus room.
+    room.send('chat', { text })
+
+    // Clear the input after sending.
+    setChatInput('')
+  }
 
   return (
     <main className="game-page">
@@ -105,29 +134,51 @@ function App() {
       </div>
 
       <div className="chat-bar">
+        {/* Emoji button — functionality will be added later. */}
         <button className="chat-action" aria-label="Emojis" title="Emojis">
           ☺
         </button>
 
+        {/* Message input */}
         <input
           type="text"
           placeholder="Say something..."
           aria-label="Chat message"
+          value={chatInput}
+          onChange={(event) => setChatInput(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              sendMessage()
+            }
+          }}
+          maxLength={100}
           disabled={!room}
         />
 
-        <button className="chat-action send-button" disabled={!room}>
+        {/* Send button */}
+        <button
+          className="chat-action send-button"
+          onClick={sendMessage}
+          disabled={!room || !chatInput.trim()}
+        >
           Send
         </button>
 
+        {/* Player list — functionality will be added later. */}
         <button className="chat-action" aria-label="Players" title="Players">
           👥
         </button>
 
-        <button className="chat-action" aria-label="Friends" title="Friends">
+        {/* Profile — functionality will be added later. */}
+        <button
+          className="chat-action"
+          aria-label="My Profile"
+          title="My Profile"
+        >
           👤
         </button>
 
+        {/* Settings — functionality will be added later. */}
         <button className="chat-action" aria-label="Settings" title="Settings">
           ⚙
         </button>

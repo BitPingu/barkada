@@ -34,6 +34,32 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
       player.x = Math.max(25, Math.min(935, message.x))
       player.y = Math.max(160, Math.min(490, message.y))
     })
+
+    // Handle incoming chat messages.
+    this.onMessage('chat', (client, message: { text: string }) => {
+      // Remove leading and trailing whitespace.
+      const text = message.text?.trim()
+
+      // Reject empty messages and messages longer than 100 characters.
+      if (!text || text.length > 100) {
+        return
+      }
+
+      // Get the sender's player information.
+      const player = this.state.players.get(client.sessionId)
+
+      // Ignore messages from clients that aren't in the room.
+      if (!player) {
+        return
+      }
+
+      // Broadcast the message to all players in the room.
+      this.broadcast('chat', {
+        sessionId: client.sessionId,
+        name: player.name,
+        text,
+      })
+    })
   }
 
   // When a player joins.
