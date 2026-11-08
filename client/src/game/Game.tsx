@@ -40,7 +40,7 @@ class TownScene extends Phaser.Scene {
   }
 
   // Creates a reusable player character.
-  private createPlayerCharacter(x: number, y: number) {
+  private createPlayerCharacter(x: number, y: number, name: string) {
     // Create placeholder human character
     const player = this.add.container(x, y)
 
@@ -119,10 +119,23 @@ class TownScene extends Phaser.Scene {
     character.arc(0, -36, 3, 0.2, Math.PI - 0.2, false)
     character.strokePath()
 
-    // Add the Graphics object to the container
-    player.add(character)
+    // Display the player's name above their character.
+    const nameLabel = this.add.text(0, 30, name, {
+      fontFamily: 'Arial',
+      fontSize: '14px',
+      color: '#ffffff',
+      stroke: '#26384b',
+      strokeThickness: 3,
+      align: 'center',
+    })
 
-    // Set render depth
+    // Center the name label above the character.
+    nameLabel.setOrigin(0.5, 0.5)
+
+    // Add the character and name label to the player container.
+    player.add([character, nameLabel])
+
+    // Set the player's rendering depth.
     player.setDepth(y)
 
     return player
@@ -145,8 +158,11 @@ class TownScene extends Phaser.Scene {
     // Stop if the character is already at the destination.
     if (distance < 1) return
 
-    // Face the direction of movement.
-    character.setScale(x < character.x ? -1 : 1, 1)
+    const direction = x < character.x ? -1 : 1
+
+    // Flip only the character graphics.
+    const playerGraphics = character.getAt(0) as Phaser.GameObjects.Graphics
+    playerGraphics.setScale(direction, 1)
 
     // Stop any previous movement.
     this.tweens.killTweensOf(character)
@@ -228,7 +244,7 @@ class TownScene extends Phaser.Scene {
     buildings.fillTriangle(700, 55, 790, -5, 880, 55)
 
     // Create the local player.
-    this.player = this.createPlayerCharacter(480, 320)
+    this.player = this.createPlayerCharacter(480, 320, 'You')
 
     // Synchronize remote players with the Colyseus room.
     const syncPlayers = () => {
@@ -250,7 +266,11 @@ class TownScene extends Phaser.Scene {
 
           // Create a character if one doesn't exist.
           if (!remoteCharacter) {
-            remoteCharacter = this.createPlayerCharacter(player.x, player.y)
+            remoteCharacter = this.createPlayerCharacter(
+              player.x,
+              player.y,
+              player.name,
+            )
 
             this.remotePlayers.set(sessionId, remoteCharacter)
           }
@@ -314,8 +334,11 @@ class TownScene extends Phaser.Scene {
       // Stop if already at destination
       if (distance < 5) return
 
-      // Face the direction of the destination.
-      this.player.setScale(x < this.player.x ? -1 : 1, 1)
+      const direction = x < this.player.x ? -1 : 1
+
+      // Flip only the character graphics.
+      const playerGraphics = this.player.getAt(0) as Phaser.GameObjects.Graphics
+      playerGraphics.setScale(direction, 1)
 
       // Remove the previous destination marker.
       this.destinationMarker?.destroy()
