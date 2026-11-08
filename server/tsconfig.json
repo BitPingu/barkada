@@ -10,6 +10,7 @@
     "esModuleInterop": true,
     "experimentalDecorators": true,
     "skipLibCheck": true,
+    "types": ["node", "mocha"],
     "forceConsistentCasingInFileNames": true,
     "useDefineForClassFields": false
   },

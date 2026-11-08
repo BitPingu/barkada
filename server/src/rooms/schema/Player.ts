@@ -1,4 +1,4 @@
-import { schema, t } from "@colyseus/schema";
+import { schema, t } from '@colyseus/schema'
 
 // Defines the synchronized data for an individual player.
 export const Player = schema({
@@ -7,5 +7,5 @@ export const Player = schema({
   y: t.number().default(320),
 
   // Player's display name.
-  name: t.string().default("Guest"),
-});
+  name: t.string().default('Guest'),
+})

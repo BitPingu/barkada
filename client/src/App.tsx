@@ -29,9 +29,9 @@ function App() {
 
         // Listen for changes to the synchronized room state.
         room.onStateChange((state) => {
-          console.log("Players in room:", state.players.size);
-          console.log("Player data:", state.players);
-        });
+          console.log('Players in room:', state.players.size)
+          console.log('Player data:', state.players)
+        })
       } catch (error) {
         // Log any errors encountered while connecting.
         console.error('Failed to join room:', error)
