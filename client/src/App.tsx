@@ -48,6 +48,9 @@ function App() {
   // Store an error message if joining the room fails.
   const [joinError, setJoinError] = useState<string | null>(null)
 
+  // Track the currently active room connection.
+  const roomRef = useRef<Room | null>(null)
+
   // Disable toolbar interactions while a dialogue is open.
   const isDialogueOpen = isReconnecting || Boolean(connectionError)
 
@@ -71,15 +74,21 @@ function App() {
 
   // Set up event handlers for a room connection.
   const setupRoomConnection = useCallback((connection: Room) => {
+    // Track the active room connection.
+    roomRef.current = connection
     setRoom(connection)
 
     connection.onDrop((code, reason) => {
+      if (roomRef.current !== connection) return
+
       console.warn('Connection dropped:', code, reason)
       setIsReconnecting(true)
       setConnectionError(null)
     })
 
     connection.onReconnect(() => {
+      if (roomRef.current !== connection) return
+
       console.log('Reconnected to room')
       setIsReconnecting(false)
       setConnectionError(null)
@@ -91,15 +100,22 @@ function App() {
     })
 
     connection.onLeave((code, reason) => {
+      if (roomRef.current !== connection) return
+
       console.warn('Left room:', code, reason)
+
+      roomRef.current = null
       setIsReconnecting(false)
       setConnectionError('Your connection was lost. Please rejoin.')
+
       sessionStorage.removeItem('barkada-reconnection-token')
       sessionStorage.removeItem('barkada-character-type')
     })
 
     // Update the count whenever the room state changes.
     connection.onStateChange((state) => {
+      if (roomRef.current !== connection) return
+
       setPlayerCount(state.players.size)
     })
   }, [])
@@ -327,14 +343,31 @@ function App() {
         </div>
 
         <div className="connection-status">
-          <span className={room ? 'status-dot connected' : 'status-dot'} />
-          <span>{room ? 'Connected' : 'Connecting...'}</span>
+          <span
+            className={
+              connectionError
+                ? 'status-dot'
+                : isReconnecting
+                  ? 'status-dot reconnecting'
+                  : room
+                    ? 'status-dot connected'
+                    : 'status-dot'
+            }
+          />
+          <span>
+            {connectionError
+              ? 'Disconnected'
+              : isReconnecting
+                ? 'Reconnecting...'
+                : room
+                  ? 'Connected'
+                  : 'Connecting...'}
+          </span>
         </div>
       </header>
 
       <div className="room-info">
         <div className="room-name">
-          <span className={room ? 'status-dot connected' : 'status-dot'} />
           <span>{roomName || 'Room'}</span>
         </div>
 
@@ -431,7 +464,10 @@ function App() {
                   <button
                     className="connection-button"
                     onClick={() => {
+                      roomRef.current = null
                       setRoom(null)
+                      setIsJoining(false)
+                      setIsReconnecting(false)
                       setConnectionError(null)
                     }}
                   >

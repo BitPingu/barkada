@@ -69,11 +69,15 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #e5a23b;
+  background: #9ca3af;
 }
 
 .status-dot.connected {
   background: #35a66b;
+}
+
+.status-dot.reconnecting {
+  background-color: #f0a43a;
 }
 
 /* Room information */
