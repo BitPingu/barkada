@@ -25,7 +25,13 @@ export function createPlayerCharacter(
 
   // Draw the left leg.
   leftLeg.fillStyle(0x26384b)
-  leftLeg.fillRoundedRect(-8, -3, 7, 17, 3)
+  leftLeg.fillRoundedRect(
+    characterType === 'girl' ? -7.5 : -8,
+    -3,
+    characterType === 'girl' ? 6 : 7,
+    17,
+    3,
+  )
 
   // Draw the left shoe.
   leftLeg.fillStyle(0x59402e)
@@ -33,7 +39,13 @@ export function createPlayerCharacter(
 
   // Draw the right leg.
   rightLeg.fillStyle(0x26384b)
-  rightLeg.fillRoundedRect(1, -3, 7, 17, 3)
+  rightLeg.fillRoundedRect(
+    characterType === 'girl' ? 1.5 : 1,
+    -3,
+    characterType === 'girl' ? 6 : 7,
+    17,
+    3,
+  )
 
   // Draw the right shoe.
   rightLeg.fillStyle(0x59402e)
@@ -43,31 +55,64 @@ export function createPlayerCharacter(
   legs.add([leftLeg, rightLeg])
 
   // Position the left arm at the shoulder.
-  leftArm.setPosition(-12.5, -23)
+  leftArm.setPosition(characterType === 'girl' ? -10 : -12.5, -23)
 
   // Draw the left arm and hand.
-  leftArm.fillStyle(0x3979b8)
-  leftArm.fillRoundedRect(-4.5, 0, 9, 22, 5)
+  leftArm.fillStyle(characterType === 'girl' ? 0xd982a5 : 0x3979b8)
+  leftArm.fillRoundedRect(
+    characterType === 'girl' ? -3.5 : -4.5,
+    0,
+    characterType === 'girl' ? 7 : 9,
+    20,
+    5,
+  )
 
   leftArm.fillStyle(0xe8b18b)
-  leftArm.fillCircle(0, 21, 5)
+  leftArm.fillCircle(0, 19, 5)
 
   // Position the right arm at the shoulder.
-  rightArm.setPosition(12.5, -23)
+  rightArm.setPosition(characterType === 'girl' ? 10 : 12.5, -23)
 
   // Draw the right arm and hand.
-  rightArm.fillStyle(0x3979b8)
-  rightArm.fillRoundedRect(-4.5, 0, 9, 22, 5)
+  rightArm.fillStyle(characterType === 'girl' ? 0xd982a5 : 0x3979b8)
+  rightArm.fillRoundedRect(
+    characterType === 'girl' ? -3.5 : -4.5,
+    0,
+    characterType === 'girl' ? 7 : 9,
+    20,
+    5,
+  )
 
   rightArm.fillStyle(0xe8b18b)
-  rightArm.fillCircle(0, 21, 5)
+  rightArm.fillCircle(0, 19, 5)
 
   // Add both arms to the arms container.
   arms.add([leftArm, rightArm])
 
-  // Small body
-  body.fillStyle(0x3979b8)
-  body.fillRoundedRect(-11, -27, 22, 29, 8)
+  // Back hair.
+  if (characterType === 'girl') {
+    body.fillStyle(0x38251b)
+    body.fillEllipse(0, -42, 46, 58)
+  }
+
+  // Body and outfit.
+  if (characterType === 'boy') {
+    body.fillStyle(0x3979b8)
+    body.fillRoundedRect(-11, -27, 22, 29, 8)
+
+    // Decorative neckline.
+    body.fillStyle(0xb8d8f2)
+    body.fillTriangle(-5, -26, 5, -26, 0, -20)
+  } else {
+    // Slightly narrower, shaped torso.
+    body.fillStyle(0xd982a5)
+    body.fillRoundedRect(-10, -29, 20, 31, 7)
+    body.fillRoundedRect(-11, -8, 22, 10, 5)
+
+    // Decorative neckline.
+    body.fillStyle(0xf2d6ed)
+    body.fillTriangle(-5, -26, 5, -26, 0, -20)
+  }
 
   // Neck
   body.fillStyle(0xe8b18b)
@@ -94,15 +139,31 @@ export function createPlayerCharacter(
     // Hair fringe.
     body.fillTriangle(-15, -55, 0, -49, -5, -61)
     body.fillTriangle(0, -55, 14, -49, 8, -62)
-  } else {
-    // Longer hairstyle.
-    body.fillEllipse(0, -62, 42, 22)
-    body.fillEllipse(-18, -37, 12, 42)
-    body.fillEllipse(18, -37, 12, 42)
+    body.fillTriangle(-7, -58, 7, -52, 2, -64)
 
-    // Hair fringe.
-    body.fillTriangle(-17, -55, 0, -49, -6, -62)
-    body.fillTriangle(0, -55, 16, -49, 8, -62)
+    // Subtle hair highlight.
+    body.fillStyle(0x59402e, 0.7)
+    body.fillEllipse(-8, -64, 13, 4)
+  } else {
+    // Rounded top hairstyle.
+    body.fillEllipse(0, -63, 43, 23)
+
+    // Connected, slightly longer side locks.
+    body.fillEllipse(-20, -38, 12, 52)
+    body.fillEllipse(20, -38, 12, 52)
+
+    // Side-swept bangs.
+    body.fillTriangle(-17, -57, 5, -49, -5, -65)
+    body.fillTriangle(-5, -58, 15, -51, 10, -65)
+
+    // Subtle hair highlight.
+    body.fillStyle(0x59402e, 0.7)
+    body.fillEllipse(-8, -64, 13, 4)
+
+    // Small hair accessory.
+    body.fillStyle(0xe98b9b)
+    body.fillCircle(15, -60, 3)
+    body.fillCircle(12, -57, 2)
   }
 
   // Eyes

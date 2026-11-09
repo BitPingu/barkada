@@ -1,6 +1,8 @@
 # Barkada
 
-A browser-based multiplayer social game where players can explore a shared virtual world, interact with others, and connect through real-time gameplay. Inspired by Club Penguin.
+A browser-based multiplayer social game where players can explore a shared virtual world, interact with others, and connect through real-time gameplay.
+
+Inspired by some of my favourite online Flash games growing up, including Club Penguin, Woogi World, and Facebook social games.
 
 ## Tech Stack
 

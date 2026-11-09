@@ -197,7 +197,7 @@ function App() {
     <main className="game-page">
       <header className="game-header">
         <div className="brand">
-          <div className="brand-mark">B</div>
+          <div className="brand-mark">b</div>
           <h1>barkada</h1>
         </div>
 
