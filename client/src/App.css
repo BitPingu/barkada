@@ -158,6 +158,8 @@
   background: #ffffff;
   box-shadow: 0 8px 24px rgb(38 56 75 / 12%);
   text-align: center;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .character-selection h2 {
@@ -179,19 +181,28 @@
 }
 
 .character-option {
-  min-width: 130px;
-  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 180px;
+  height: 190px;
+  padding: 10px;
   border: 2px solid #d5dee8;
   border-radius: 10px;
   background: #f5f7fa;
-  color: #26384b;
-  font-size: 16px;
-  font-weight: 700;
   cursor: pointer;
   transition:
     background 0.2s,
     border-color 0.2s,
     transform 0.2s;
+}
+
+.character-option > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
 }
 
 .character-option:hover {

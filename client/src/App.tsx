@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import type { Room } from '@colyseus/sdk'
 import client from './game/colyseus'
 import type { CharacterType } from './game/objects/PlayerCharacter'
+import CharacterPreview from './game/CharacterPreview'
 import './App.css'
 
 // Lazy-load the Phaser game component.
@@ -232,7 +233,7 @@ function App() {
               onClick={() => setCharacterType('boy')}
               aria-pressed={characterType === 'boy'}
             >
-              Boy
+              <CharacterPreview characterType="boy" />
             </button>
 
             <button
@@ -242,7 +243,7 @@ function App() {
               onClick={() => setCharacterType('girl')}
               aria-pressed={characterType === 'girl'}
             >
-              Girl
+              <CharacterPreview characterType="girl" />
             </button>
           </div>
 

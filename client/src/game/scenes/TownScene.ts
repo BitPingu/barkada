@@ -247,8 +247,8 @@ export default class TownScene extends Phaser.Scene {
     // Track the player's active emoji bubble.
     this.activeBubbles.set(sessionId, bubble)
 
-    // Remove the emoji bubble after 2 seconds.
-    this.time.delayedCall(2000, () => {
+    // Remove the emoji bubble after 5 seconds.
+    this.time.delayedCall(5000, () => {
       bubble.destroy()
 
       // Only remove the entry if it still belongs to this bubble.

@@ -9,6 +9,7 @@ export function createPlayerCharacter(
   y: number,
   name: string,
   characterType: CharacterType = 'boy',
+  showName: boolean = true,
 ) {
   // Create placeholder human character
   const player = scene.add.container(x, y)
@@ -192,21 +193,25 @@ export function createPlayerCharacter(
   body.strokePath()
 
   // Display the player's name above their character.
-  const nameLabel = scene.add.text(0, 30, name, {
-    fontFamily: 'Arial',
-    fontSize: '14px',
-    color: '#ffffff',
-    stroke: '#26384b',
-    strokeThickness: 3,
-    align: 'center',
-    resolution: 2,
-  })
+  if (showName) {
+    const nameLabel = scene.add.text(0, 30, name, {
+      fontFamily: 'Arial',
+      fontSize: '14px',
+      color: '#ffffff',
+      stroke: '#26384b',
+      strokeThickness: 3,
+      align: 'center',
+      resolution: 2,
+    })
 
-  // Center the name label below the character.
-  nameLabel.setOrigin(0.5, 0.5)
+    // Center the name label below the character.
+    nameLabel.setOrigin(0.5, 0.5)
 
-  // Assemble the player character.
-  player.add([legs, body, arms, nameLabel])
+    // Assemble the player character.
+    player.add([legs, body, arms, nameLabel])
+  } else {
+    player.add([legs, body, arms])
+  }
 
   // Set the player's rendering depth.
   player.setDepth(y)
