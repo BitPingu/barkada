@@ -125,19 +125,19 @@ export default class TownScene extends Phaser.Scene {
 
     // Create the chat message text.
     const text = this.add.text(0, 0, message, {
-      fontSize: '13px',
+      fontSize: '14px',
       color: '#26384b',
       fontFamily: 'Arial',
       align: 'center',
       wordWrap: { width: 180 },
-      resolution: 2,
+      resolution: 3,
     })
 
     text.setOrigin(0.5)
 
     // Calculate the bubble dimensions based on the text.
-    const paddingX = 12
-    const paddingY = 8
+    const paddingX = 15
+    const paddingY = 10
     const width = Math.max(60, text.width + paddingX * 2)
     const height = text.height + paddingY * 2
 
@@ -211,7 +211,7 @@ export default class TownScene extends Phaser.Scene {
     const emojiText = this.add.text(0, 0, emoji, {
       fontSize: '28px',
       fontFamily: 'Arial',
-      resolution: 2,
+      resolution: 3,
     })
 
     emojiText.setOrigin(0.5)
@@ -350,6 +350,12 @@ export default class TownScene extends Phaser.Scene {
             )
 
             this.remotePlayers.set(sessionId, remoteCharacter)
+
+            // Store the initial position without triggering movement.
+            this.playerTargets.set(sessionId, {
+              x: player.x,
+              y: player.y,
+            })
           }
 
           character = remoteCharacter
@@ -358,8 +364,15 @@ export default class TownScene extends Phaser.Scene {
         // Check whether the player's destination has changed.
         const previousTarget = this.playerTargets.get(sessionId)
 
-        if (
-          !previousTarget ||
+        if (!previousTarget) {
+          // Set the initial position without animation.
+          character.setPosition(player.x, player.y)
+
+          this.playerTargets.set(sessionId, {
+            x: player.x,
+            y: player.y,
+          })
+        } else if (
           previousTarget.x !== player.x ||
           previousTarget.y !== player.y
         ) {
@@ -368,7 +381,7 @@ export default class TownScene extends Phaser.Scene {
             y: player.y,
           })
 
-          // Animate toward the synchronized position.
+          // Animate toward the updated synchronized position.
           this.moveCharacter(character, player.x, player.y)
         }
       })

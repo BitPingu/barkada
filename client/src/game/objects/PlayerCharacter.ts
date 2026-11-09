@@ -201,7 +201,7 @@ export function createPlayerCharacter(
       stroke: '#26384b',
       strokeThickness: 3,
       align: 'center',
-      resolution: 2,
+      resolution: 3,
     })
 
     // Center the name label below the character.

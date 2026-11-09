@@ -3,11 +3,24 @@ import { MyRoomState } from './schema/MyRoomState.js'
 import { Player } from './schema/Player.js'
 
 // Emojis players are allowed to send.
-const ALLOWED_EMOJIS = ['😀', '😂', '😢', '😮', '❤️', '👋']
+const ALLOWED_EMOJIS = [
+  '😀',
+  '😂',
+  '😭',
+  '😮',
+  '😡',
+  '🥺',
+  '❤️',
+  '🎶',
+  '🔥',
+  '👍',
+  '👋',
+  '🙏',
+]
 
 export class MyRoom extends Room<{ state: MyRoomState }> {
   // Maximum number of players allowed in one room.
-  maxClients = 4
+  maxClients = 20
 
   // Initialize the synchronized room state.
   state = new MyRoomState()
@@ -132,6 +145,14 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
     this.state.players.set(client.sessionId, player)
 
     console.log(client.sessionId, 'joined!')
+  }
+
+  // When a player unexpectedly disconnects.
+  onDrop(client: Client, code: CloseCode) {
+    console.log(client.sessionId, 'dropped connection!', code)
+
+    // Allow the player 30 seconds to reconnect.
+    this.allowReconnection(client, 30)
   }
 
   // When a player leaves.

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import type { Room } from '@colyseus/sdk'
 import client from './game/colyseus'
 import type { CharacterType } from './game/objects/PlayerCharacter'
@@ -10,7 +10,20 @@ import './App.css'
 const Game = lazy(() => import('./game/Game'))
 
 // Emojis available in the picker.
-const EMOJIS = ['😀', '😂', '😢', '😮', '❤️', '👋']
+const EMOJIS = [
+  '😀',
+  '😂',
+  '😭',
+  '😮',
+  '😡',
+  '🥺',
+  '❤️',
+  '🎶',
+  '🔥',
+  '👍',
+  '👋',
+  '🙏',
+]
 
 // Render application and Game component
 function App() {
@@ -22,6 +35,21 @@ function App() {
 
   // Tracks whether the player is joining the game.
   const [isJoining, setIsJoining] = useState(false)
+
+  // Tracks whether the client is attempting to reconnect.
+  const [isReconnecting, setIsReconnecting] = useState(false)
+
+  // Stores an error if the connection cannot be restored.
+  const [connectionError, setConnectionError] = useState<string | null>(null)
+
+  // Reuse an in-progress session recovery request.
+  const recoveryPromiseRef = useRef<Promise<Room> | null>(null)
+
+  // Store an error message if joining the room fails.
+  const [joinError, setJoinError] = useState<string | null>(null)
+
+  // Disable toolbar interactions while a dialogue is open.
+  const isDialogueOpen = isReconnecting || Boolean(connectionError)
 
   // Store the player count.
   const [playerCount, setPlayerCount] = useState(0)
@@ -41,8 +69,46 @@ function App() {
   // References the emoji button and picker.
   const emojiPickerRef = useRef<HTMLDivElement>(null)
 
+  // Set up event handlers for a room connection.
+  const setupRoomConnection = useCallback((connection: Room) => {
+    setRoom(connection)
+
+    connection.onDrop((code, reason) => {
+      console.warn('Connection dropped:', code, reason)
+      setIsReconnecting(true)
+      setConnectionError(null)
+    })
+
+    connection.onReconnect(() => {
+      console.log('Reconnected to room')
+      setIsReconnecting(false)
+      setConnectionError(null)
+
+      sessionStorage.setItem(
+        'barkada-reconnection-token',
+        connection.reconnectionToken,
+      )
+    })
+
+    connection.onLeave((code, reason) => {
+      console.warn('Left room:', code, reason)
+      setIsReconnecting(false)
+      setConnectionError('Your connection was lost. Please rejoin.')
+      sessionStorage.removeItem('barkada-reconnection-token')
+      sessionStorage.removeItem('barkada-character-type')
+    })
+
+    // Update the count whenever the room state changes.
+    connection.onStateChange((state) => {
+      setPlayerCount(state.players.size)
+    })
+  }, [])
+
   // Join the game using the selected character type.
   async function joinGame() {
+    // Clear any previous join error.
+    setJoinError(null)
+
     if (!characterType || isJoining) return
 
     setIsJoining(true)
@@ -53,19 +119,24 @@ function App() {
         characterType,
       })
 
-      setRoom(connection)
+      sessionStorage.setItem(
+        'barkada-reconnection-token',
+        connection.reconnectionToken,
+      )
 
-      // Update the count whenever the room state changes.
-      connection.onStateChange((state) => {
-        setPlayerCount(state.players.size)
-      })
+      sessionStorage.setItem('barkada-character-type', characterType)
+
+      setupRoomConnection(connection)
 
       // Log the room and session information for testing.
       console.log('Joined room:', connection.roomId)
       console.log('Session ID:', connection.sessionId)
     } catch (error) {
-      // Log any errors encountered while connecting.
       console.error('Failed to join room:', error)
+
+      // Display an error message if joining fails.
+      setJoinError('Unable to join. Please try again.')
+
       setIsJoining(false)
     }
   }
@@ -77,7 +148,58 @@ function App() {
     }
   }, [room])
 
-  // Fetch the Town Square player count while not connected.
+  // Attempt to restore an existing session after a page refresh.
+  useEffect(() => {
+    let isActive = true
+
+    async function recoverSession() {
+      const token = sessionStorage.getItem('barkada-reconnection-token')
+      const savedCharacterType = sessionStorage.getItem(
+        'barkada-character-type',
+      )
+
+      if (!token || !savedCharacterType) return
+
+      setIsJoining(true)
+      setCharacterType(savedCharacterType as CharacterType)
+
+      try {
+        if (!recoveryPromiseRef.current) {
+          recoveryPromiseRef.current = client.reconnect(token)
+        }
+
+        const connection = await recoveryPromiseRef.current
+
+        if (!isActive) return
+
+        setupRoomConnection(connection)
+
+        sessionStorage.setItem(
+          'barkada-reconnection-token',
+          connection.reconnectionToken,
+        )
+
+        setIsJoining(false)
+      } catch (error) {
+        if (!isActive) return
+
+        console.error('Failed to recover session:', error)
+        sessionStorage.removeItem('barkada-reconnection-token')
+        sessionStorage.removeItem('barkada-character-type')
+        setIsJoining(false)
+      } finally {
+        recoveryPromiseRef.current = null
+      }
+    }
+
+    void recoverSession()
+
+    return () => {
+      isActive = false
+    }
+  }, [setupRoomConnection])
+
+  // Fetch the Room player count while not connected.
   useEffect(() => {
     if (room) return
 
@@ -211,7 +333,7 @@ function App() {
       <div className="room-info">
         <div className="room-name">
           <span className={room ? 'status-dot connected' : 'status-dot'} />
-          <span>{roomName}</span>
+          <span>{roomName || 'Room'}</span>
         </div>
 
         <div className="room-player-count">
@@ -222,10 +344,13 @@ function App() {
       {!room ? (
         // Character selection screen.
         <section className="character-selection">
-          <h2>Choose Your Character</h2>
-          <p>Select a character to enter the town.</p>
+          <h2>Welcome to barkada!</h2>
+          <p>Select a character to enter.</p>
 
-          <div className="character-options">
+          <div
+            className="character-options"
+            onContextMenu={(event) => event.preventDefault()}
+          >
             <button
               className={`character-option ${
                 characterType === 'boy' ? 'selected' : ''
@@ -254,25 +379,69 @@ function App() {
           >
             {isJoining ? 'Joining...' : 'Join Game'}
           </button>
+          <p className={`join-error ${joinError ? 'visible' : ''}`}>
+            {joinError || '\u00A0'}
+          </p>
         </section>
       ) : (
         // Game interface.
         <>
-          <div className="game-container">
+          <div
+            className="game-container"
+            onPointerDown={(event) => {
+              if (
+                event.target instanceof HTMLCanvasElement &&
+                document.activeElement instanceof HTMLElement
+              ) {
+                document.activeElement.blur()
+              }
+            }}
+          >
             {/* Load the game separately from the app bundle
               after the room connection is established. */}
             <Suspense
               fallback={
                 <div className="loading-screen">
-                  Loading {roomName || 'Room'}...
+                  <div className="loading-spinner" />
+                  <p>Loading {roomName || 'Room'}...</p>
                 </div>
               }
             >
               <Game room={room} characterType={characterType!} />
             </Suspense>
+
+            {isReconnecting && (
+              <div className="connection-overlay">
+                <div className="connection-dialog">
+                  <h2>Reconnecting...</h2>
+                  <p>
+                    Trying to restore your connection to {roomName || 'Room'}.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {connectionError && (
+              <div className="connection-overlay">
+                <div className="connection-dialog">
+                  <h2>Connection Lost</h2>
+                  <p>{connectionError}</p>
+                  <button
+                    className="connection-button"
+                    onClick={() => {
+                      setRoom(null)
+                      setConnectionError(null)
+                    }}
+                  >
+                    Return to Character Selection
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="chat-bar">
+          {/* Disable the toolbar while a connection dialogue is open. */}
+          <div className="chat-bar" inert={isDialogueOpen}>
             {/* Emoji controls */}
             <div className="emoji-controls" ref={emojiPickerRef}>
               {/* Emoji button */}
