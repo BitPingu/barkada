@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import type { Room } from '@colyseus/sdk'
 import client from './game/colyseus'
+import type { CharacterType } from './game/objects/PlayerCharacter'
 import './App.css'
 
 // Lazy-load the Phaser game component.
@@ -14,6 +15,12 @@ const EMOJIS = ['😀', '😂', '😢', '😮', '❤️', '👋']
 function App() {
   // Store the active Colyseus room connection.
   const [room, setRoom] = useState<Room | null>(null)
+
+  // Store the selected character type.
+  const [characterType, setCharacterType] = useState<CharacterType | null>(null)
+
+  // Tracks whether the player is joining the game.
+  const [isJoining, setIsJoining] = useState(false)
 
   // Store the player count.
   const [playerCount, setPlayerCount] = useState(0)
@@ -30,55 +37,70 @@ function App() {
   // References the emoji button and picker.
   const emojiPickerRef = useRef<HTMLDivElement>(null)
 
-  // Connect to a Colyseus room when the React component mounts.
+  // Join the game using the selected character type.
+  async function joinGame() {
+    if (!characterType || isJoining) return
+
+    setIsJoining(true)
+
+    try {
+      // Join the room and send the selected character type.
+      const connection = await client.joinOrCreate('my_room', {
+        characterType,
+      })
+
+      setRoom(connection)
+
+      // Update the count whenever the room state changes.
+      connection.onStateChange((state) => {
+        setPlayerCount(state.players.size)
+      })
+
+      // Log the room and session information for testing.
+      console.log('Joined room:', connection.roomId)
+      console.log('Session ID:', connection.sessionId)
+    } catch (error) {
+      // Log any errors encountered while connecting.
+      console.error('Failed to join room:', error)
+      setIsJoining(false)
+    }
+  }
+
+  // Leave the room when the application unmounts.
   useEffect(() => {
-    // Track whether this effect instance is still active.
-    let active = true
-    let joinedRoom: Room | null = null
+    return () => {
+      room?.leave()
+    }
+  }, [room])
 
-    async function joinRoom() {
+  // Fetch the Town Square player count while not connected.
+  useEffect(() => {
+    if (room) return
+
+    let isActive = true
+
+    async function fetchPlayerCount() {
       try {
-        // Join an existing room or create one if none exists.
-        const connection = await client.joinOrCreate('my_room')
+        const response = await client.http.get('/api/town-status')
 
-        // Leave if this effect has already been cleaned up.
-        if (!active) {
-          connection.leave()
-          return
+        if (isActive) {
+          setPlayerCount(response.data.playerCount)
         }
-
-        joinedRoom = connection
-        setRoom(connection)
-
-        // Listen for synchronized room state changes.
-        connection.onStateChange((state) => {
-          const players = state.players
-
-          if (!players) return
-
-          // Update the player count whenever the room changes.
-          setPlayerCount(players.size)
-
-          console.log('Updated player count:', players.size)
-        })
-
-        // Log the room and session information for testing.
-        console.log('Joined room:', connection.roomId)
-        console.log('Session ID:', connection.sessionId)
       } catch (error) {
-        // Log any errors encountered while connecting.
-        console.error('Failed to join room:', error)
+        console.error('Failed to fetch player count:', error)
       }
     }
 
-    joinRoom()
+    // Fetch immediately, then refresh every five seconds.
+    void fetchPlayerCount()
 
-    // Clean up the connection when the effect is removed.
+    const intervalId = window.setInterval(fetchPlayerCount, 5000)
+
     return () => {
-      active = false
-      joinedRoom?.leave()
+      isActive = false
+      window.clearInterval(intervalId)
     }
-  }, [])
+  }, [room])
 
   // Close the emoji picker when clicking outside the emoji controls.
   useEffect(() => {
@@ -183,7 +205,7 @@ function App() {
 
       <div className="room-info">
         <div className="room-name">
-          <span className="room-indicator" />
+          <span className={room ? 'status-dot connected' : 'status-dot'} />
           <span>Town Square</span>
         </div>
 
@@ -192,94 +214,139 @@ function App() {
         </div>
       </div>
 
-      <div className="game-container">
-        {/* Load the game separately from the app bundle
-          after the room connection is established. */}
-        {room ? (
-          <Suspense
-            fallback={<div className="loading-screen">Loading Town...</div>}
-          >
-            <Game room={room} />
-          </Suspense>
-        ) : (
-          <div className="loading-screen">Connecting to Barkada...</div>
-        )}
-      </div>
+      {!room ? (
+        // Character selection screen.
+        <section className="character-selection">
+          <h2>Choose Your Character</h2>
+          <p>Select a character to enter the town.</p>
 
-      <div className="chat-bar">
-        {/* Emoji controls */}
-        <div className="emoji-controls" ref={emojiPickerRef}>
-          {/* Emoji button */}
+          <div className="character-options">
+            <button
+              className={`character-option ${
+                characterType === 'boy' ? 'selected' : ''
+              }`}
+              onClick={() => setCharacterType('boy')}
+              aria-pressed={characterType === 'boy'}
+            >
+              Boy
+            </button>
+
+            <button
+              className={`character-option ${
+                characterType === 'girl' ? 'selected' : ''
+              }`}
+              onClick={() => setCharacterType('girl')}
+              aria-pressed={characterType === 'girl'}
+            >
+              Girl
+            </button>
+          </div>
+
           <button
-            className="chat-action"
-            aria-label="Emojis"
-            title="Emojis"
-            onClick={() => setIsEmojiPickerOpen((open) => !open)}
-            disabled={!room}
+            className="join-button"
+            onClick={joinGame}
+            disabled={!characterType || isJoining}
           >
-            ☺
+            {isJoining ? 'Joining...' : 'Join Game'}
           </button>
-          {/* Emoji picker */}
-          {isEmojiPickerOpen && (
-            <div className="emoji-picker">
-              {EMOJIS.map((emoji) => (
-                <button
-                  key={emoji}
-                  className="emoji-option"
-                  onClick={() => sendEmoji(emoji)}
-                  disabled={isChatCoolingDown}
-                >
-                  {emoji}
-                </button>
-              ))}
+        </section>
+      ) : (
+        // Game interface.
+        <>
+          <div className="game-container">
+            {/* Load the game separately from the app bundle
+              after the room connection is established. */}
+            <Suspense
+              fallback={<div className="loading-screen">Loading Town...</div>}
+            >
+              <Game room={room} characterType={characterType!} />
+            </Suspense>
+          </div>
+
+          <div className="chat-bar">
+            {/* Emoji controls */}
+            <div className="emoji-controls" ref={emojiPickerRef}>
+              {/* Emoji button */}
+              <button
+                className="chat-action"
+                aria-label="Emojis"
+                title="Emojis"
+                onClick={() => setIsEmojiPickerOpen((open) => !open)}
+                disabled={!room}
+              >
+                ☺
+              </button>
+              {/* Emoji picker */}
+              {isEmojiPickerOpen && (
+                <div className="emoji-picker">
+                  {EMOJIS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      className="emoji-option"
+                      onClick={() => sendEmoji(emoji)}
+                      disabled={isChatCoolingDown}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {/* Message input */}
-        <input
-          type="text"
-          placeholder="Say something..."
-          aria-label="Chat message"
-          value={chatInput}
-          onChange={(event) => setChatInput(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              sendMessage()
-            }
-          }}
-          maxLength={100}
-          disabled={!room}
-        />
+            {/* Message input */}
+            <input
+              type="text"
+              placeholder="Say something..."
+              aria-label="Chat message"
+              value={chatInput}
+              onChange={(event) => setChatInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  sendMessage()
+                }
+              }}
+              maxLength={100}
+              disabled={!room}
+            />
 
-        {/* Send button */}
-        <button
-          className="chat-action send-button"
-          onClick={sendMessage}
-          disabled={!room || !chatInput.trim() || isChatCoolingDown}
-        >
-          Send
-        </button>
+            {/* Send button */}
+            <button
+              className="chat-action send-button"
+              onClick={sendMessage}
+              disabled={!room || !chatInput.trim() || isChatCoolingDown}
+            >
+              Send
+            </button>
 
-        {/* Player list — functionality will be added later. */}
-        <button className="chat-action" aria-label="Players" title="Players">
-          👥
-        </button>
+            {/* Player list — functionality will be added later. */}
+            <button
+              className="chat-action"
+              aria-label="Players"
+              title="Players"
+            >
+              👥
+            </button>
 
-        {/* Profile — functionality will be added later. */}
-        <button
-          className="chat-action"
-          aria-label="My Profile"
-          title="My Profile"
-        >
-          👤
-        </button>
+            {/* Profile — functionality will be added later. */}
+            <button
+              className="chat-action"
+              aria-label="My Profile"
+              title="My Profile"
+            >
+              👤
+            </button>
 
-        {/* Settings — functionality will be added later. */}
-        <button className="chat-action" aria-label="Settings" title="Settings">
-          ⚙
-        </button>
-      </div>
+            {/* Settings — functionality will be added later. */}
+            <button
+              className="chat-action"
+              aria-label="Settings"
+              title="Settings"
+            >
+              ⚙
+            </button>
+          </div>
+        </>
+      )}
     </main>
   )
 }

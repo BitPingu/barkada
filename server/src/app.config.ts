@@ -5,6 +5,7 @@ import {
   playground,
   createRouter,
   createEndpoint,
+  matchMaker,
 } from 'colyseus'
 
 /**
@@ -31,6 +32,22 @@ const server = defineServer({
     api_hello: createEndpoint('/api/hello', { method: 'GET' }, async (ctx) => {
       return { message: 'Hello World' }
     }),
+    api_town_status: createEndpoint(
+      '/api/town-status',
+      { method: 'GET' },
+      async () => {
+        // Find all active Town Square rooms.
+        const rooms = await matchMaker.query({ name: 'my_room' })
+
+        // Add up the number of connected players.
+        const playerCount = rooms.reduce(
+          (total, room) => total + room.clients,
+          0,
+        )
+
+        return { playerCount }
+      },
+    ),
   }),
 
   /**

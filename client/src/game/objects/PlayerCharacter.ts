@@ -1,11 +1,14 @@
 import Phaser from 'phaser'
 
+export type CharacterType = 'boy' | 'girl'
+
 // Creates a reusable player character.
 export function createPlayerCharacter(
   scene: Phaser.Scene,
   x: number,
   y: number,
   name: string,
+  characterType: CharacterType = 'boy',
 ) {
   // Create placeholder human character
   const player = scene.add.container(x, y)
@@ -81,13 +84,26 @@ export function createPlayerCharacter(
 
   // Hair
   body.fillStyle(0x38251b)
-  body.fillEllipse(0, -62, 40, 21)
-  body.fillEllipse(-14, -56, 14, 19)
-  body.fillEllipse(14, -56, 14, 19)
 
-  // Hair fringe
-  body.fillTriangle(-15, -55, 0, -49, -5, -61)
-  body.fillTriangle(0, -55, 14, -49, 8, -62)
+  if (characterType === 'boy') {
+    // Existing boy hairstyle.
+    body.fillEllipse(0, -62, 40, 21)
+    body.fillEllipse(-14, -56, 14, 19)
+    body.fillEllipse(14, -56, 14, 19)
+
+    // Hair fringe.
+    body.fillTriangle(-15, -55, 0, -49, -5, -61)
+    body.fillTriangle(0, -55, 14, -49, 8, -62)
+  } else {
+    // Longer hairstyle.
+    body.fillEllipse(0, -62, 42, 22)
+    body.fillEllipse(-18, -37, 12, 42)
+    body.fillEllipse(18, -37, 12, 42)
+
+    // Hair fringe.
+    body.fillTriangle(-17, -55, 0, -49, -6, -62)
+    body.fillTriangle(0, -55, 16, -49, 8, -62)
+  }
 
   // Eyes
   body.fillStyle(0xffffff)

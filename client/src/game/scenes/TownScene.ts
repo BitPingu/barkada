@@ -5,6 +5,7 @@ import {
   createPlayerCharacter,
   startWalkingAnimation,
 } from '../objects/PlayerCharacter'
+import type { CharacterType } from '../objects/PlayerCharacter'
 
 // Creates and manages the town environment.
 export default class TownScene extends Phaser.Scene {
@@ -13,6 +14,9 @@ export default class TownScene extends Phaser.Scene {
 
   // Stores the Colyseus room connection.
   private room!: Room<MyRoomState>
+
+  // Stores the selected character type.
+  private characterType!: CharacterType
 
   // Stores characters belonging to other players.
   private remotePlayers = new Map<string, Phaser.GameObjects.Container>()
@@ -31,10 +35,12 @@ export default class TownScene extends Phaser.Scene {
     super('TownScene')
   }
 
-  // Receives the Colyseus room connection.
-  init(data: { room: Room<MyRoomState> }) {
+  // Receives the Colyseus room connection and selected character type.
+  init(data: { room: Room<MyRoomState>; characterType: CharacterType }) {
     // access to room connection
     this.room = data.room
+    this.characterType = data.characterType
+
     console.log('Connected to room:', data.room.roomId)
   }
 
@@ -303,7 +309,13 @@ export default class TownScene extends Phaser.Scene {
     buildings.fillTriangle(700, 55, 790, -5, 880, 55)
 
     // Create the local player.
-    const localPlayer = createPlayerCharacter(this, 480, 320, 'You')
+    const localPlayer = createPlayerCharacter(
+      this,
+      480,
+      320,
+      'You',
+      this.characterType,
+    )
     this.player = localPlayer
 
     // Synchronize remote players with the Colyseus room.
@@ -331,6 +343,7 @@ export default class TownScene extends Phaser.Scene {
               player.x,
               player.y,
               player.name,
+              player.characterType,
             )
 
             this.remotePlayers.set(sessionId, remoteCharacter)

@@ -114,7 +114,7 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
   }
 
   // When a player joins.
-  onJoin(client: Client, options: any) {
+  onJoin(client: Client, options: { characterType?: string }) {
     // Create a player entry using the client's session ID.
     const player = new Player()
 
@@ -124,6 +124,9 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
 
     // Give the player a temporary display name.
     player.name = `Guest ${this.state.players.size + 1}`
+
+    // Assign the selected character type.
+    player.characterType = options.characterType === 'girl' ? 'girl' : 'boy'
 
     // Add the player to the synchronized room state.
     this.state.players.set(client.sessionId, player)
