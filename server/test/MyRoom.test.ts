@@ -39,6 +39,7 @@ describe('testing your Colyseus app', () => {
           name: 'Guest 1',
           x: 480,
           y: 320,
+          characterType: 'boy',
         },
       },
     })

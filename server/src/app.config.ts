@@ -45,7 +45,10 @@ const server = defineServer({
           0,
         )
 
-        return { playerCount }
+        return {
+          roomName: 'Town Square',
+          playerCount,
+        }
       },
     ),
   }),

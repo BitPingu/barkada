@@ -49,8 +49,9 @@ export default function Game({ room, characterType }: GameProps) {
     return () => {
       active = false
       game.destroy(true)
+      game.canvas?.remove()
     }
-  }, [room])
+  }, [room, characterType])
 
   // HTML element Phaser uses as parent
   return <div ref={gameRef} />

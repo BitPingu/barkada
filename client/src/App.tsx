@@ -25,6 +25,9 @@ function App() {
   // Store the player count.
   const [playerCount, setPlayerCount] = useState(0)
 
+  // Stores the room's display name.
+  const [roomName, setRoomName] = useState('')
+
   // Store the message currently being typed.
   const [chatInput, setChatInput] = useState('')
 
@@ -84,6 +87,7 @@ function App() {
         const response = await client.http.get('/api/town-status')
 
         if (isActive) {
+          setRoomName(response.data.roomName)
           setPlayerCount(response.data.playerCount)
         }
       } catch (error) {
@@ -206,7 +210,7 @@ function App() {
       <div className="room-info">
         <div className="room-name">
           <span className={room ? 'status-dot connected' : 'status-dot'} />
-          <span>Town Square</span>
+          <span>{roomName}</span>
         </div>
 
         <div className="room-player-count">
@@ -257,7 +261,11 @@ function App() {
             {/* Load the game separately from the app bundle
               after the room connection is established. */}
             <Suspense
-              fallback={<div className="loading-screen">Loading Town...</div>}
+              fallback={
+                <div className="loading-screen">
+                  Loading {roomName || 'Room'}...
+                </div>
+              }
             >
               <Game room={room} characterType={characterType!} />
             </Suspense>

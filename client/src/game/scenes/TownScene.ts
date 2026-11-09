@@ -84,6 +84,9 @@ export default class TownScene extends Phaser.Scene {
         character.setDepth(character.y)
       },
       onComplete: () => {
+        // Stop if the character was destroyed during the tween.
+        if (!character.active) return
+
         // Stop the walking animation.
         const legs = character.getAt(0) as Phaser.GameObjects.Container
         const arms = character.getAt(2) as Phaser.GameObjects.Container
