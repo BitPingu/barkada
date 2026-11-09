@@ -29,6 +29,9 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
   private lastChatMessage = new Map<string, number>()
 
   onCreate(options: any) {
+    // Keep Town Square available when everyone leaves.
+    this.autoDispose = false
+
     console.log('Room created:', this.roomId)
 
     // Handle player movement requests.

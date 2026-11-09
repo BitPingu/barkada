@@ -16,7 +16,7 @@ describe('testing your Colyseus app', () => {
 
   it('connects to a room and registers a player', async () => {
     // Create a new room instance.
-    const room = await colyseus.createRoom<MyRoomState>('my_room', {})
+    const room = await colyseus.createRoom<MyRoomState>('town_square', {})
 
     // Connect a client to the room.
     const client1 = await colyseus.connectTo(room)

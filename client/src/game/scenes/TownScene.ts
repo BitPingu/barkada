@@ -148,7 +148,7 @@ export default class TownScene extends Phaser.Scene {
     }
 
     // Create the chat bubble container.
-    const bubble = this.add.container(0, -90)
+    const bubble = this.add.container(0, -108)
 
     // Create the chat message text.
     const text = this.add.text(0, 0, message, {
@@ -232,7 +232,7 @@ export default class TownScene extends Phaser.Scene {
     }
 
     // Create a container above the player's character.
-    const bubble = this.add.container(0, -90)
+    const bubble = this.add.container(0, -108)
 
     // Create the emoji text.
     const emojiText = this.add.text(0, 0, emoji, {
@@ -347,6 +347,25 @@ export default class TownScene extends Phaser.Scene {
       this.characterType,
     )
     this.player = localPlayer
+
+    // Show a movement hint for new players.
+    const movementHint = this.add.container(480, 495)
+
+    const hintBackground = this.add.graphics()
+    hintBackground.fillStyle(0x26384b, 0.8)
+    hintBackground.fillRoundedRect(-95, -16, 190, 32, 8)
+
+    const hintText = this.add.text(0, 0, 'Click anywhere to move!', {
+      fontSize: '13px',
+      color: '#ffffff',
+      fontFamily: 'Arial',
+      resolution: 3,
+    })
+
+    hintText.setOrigin(0.5)
+
+    movementHint.add([hintBackground, hintText])
+    movementHint.setDepth(1000)
 
     // Synchronize remote players with the Colyseus room.
     const syncPlayers = () => {
@@ -476,6 +495,16 @@ export default class TownScene extends Phaser.Scene {
       if (distance < 5) {
         this.fadeDestinationMarker()
         return
+      }
+
+      // Hide the movement hint after the player's first move.
+      if (movementHint.active) {
+        this.tweens.add({
+          targets: movementHint,
+          alpha: 0,
+          duration: 200,
+          onComplete: () => movementHint.destroy(),
+        })
       }
 
       const direction = x < this.player.x ? -1 : 1

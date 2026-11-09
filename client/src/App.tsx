@@ -115,7 +115,7 @@ function App() {
 
     try {
       // Join the room and send the selected character type.
-      const connection = await client.joinOrCreate('my_room', {
+      const connection = await client.join('town_square', {
         characterType,
       })
 
@@ -127,15 +127,17 @@ function App() {
       sessionStorage.setItem('barkada-character-type', characterType)
 
       setupRoomConnection(connection)
-
-      // Log the room and session information for testing.
-      console.log('Joined room:', connection.roomId)
-      console.log('Session ID:', connection.sessionId)
     } catch (error) {
+      // Display an error message if joining fails.
       console.error('Failed to join room:', error)
 
-      // Display an error message if joining fails.
-      setJoinError('Unable to join. Please try again.')
+      const errorCode = (error as { code?: number }).code
+
+      if (errorCode === 521) {
+        setJoinError('Sorry! The server is currently full.')
+      } else {
+        setJoinError('Unable to join. Please try again.')
+      }
 
       setIsJoining(false)
     }
