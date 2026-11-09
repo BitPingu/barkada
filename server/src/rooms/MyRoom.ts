@@ -11,8 +11,8 @@ const ALLOWED_EMOJIS = [
   '😡',
   '🥺',
   '❤️',
-  '🎶',
   '🔥',
+  '🎶',
   '👍',
   '👋',
   '🙏',
@@ -51,7 +51,7 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
 
       // Clamp coordinates to the game boundaries.
       player.x = Math.max(25, Math.min(935, message.x))
-      player.y = Math.max(160, Math.min(490, message.y))
+      player.y = Math.max(170, Math.min(520, message.y))
     })
 
     // Handle incoming chat messages.

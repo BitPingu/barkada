@@ -28,7 +28,7 @@ export default function CharacterPreview({
           const character = createPlayerCharacter(
             this,
             80,
-            120,
+            140,
             '',
             characterType,
             false,

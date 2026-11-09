@@ -87,9 +87,14 @@ export default class TownScene extends Phaser.Scene {
         // Stop if the character was destroyed during the tween.
         if (!character.active) return
 
+        // Fade the destination marker when the local player arrives.
+        if (character === this.player) {
+          this.fadeDestinationMarker()
+        }
+
         // Stop the walking animation.
-        const legs = character.getAt(0) as Phaser.GameObjects.Container
-        const arms = character.getAt(2) as Phaser.GameObjects.Container
+        const legs = character.getAt(1) as Phaser.GameObjects.Container
+        const arms = character.getAt(3) as Phaser.GameObjects.Container
 
         const leftLeg = legs.getAt(0) as Phaser.GameObjects.Graphics
         const rightLeg = legs.getAt(1) as Phaser.GameObjects.Graphics
@@ -103,6 +108,28 @@ export default class TownScene extends Phaser.Scene {
         rightLeg.setAngle(0)
         leftArm.setAngle(0)
         rightArm.setAngle(0)
+      },
+    })
+  }
+
+  // Fades out the current destination marker.
+  private fadeDestinationMarker() {
+    const marker = this.destinationMarker
+
+    if (!marker) return
+
+    this.tweens.add({
+      targets: marker,
+      scale: 0,
+      alpha: 0,
+      duration: 300,
+      ease: 'Sine.easeIn',
+      onComplete: () => {
+        marker.destroy()
+
+        if (this.destinationMarker === marker) {
+          this.destinationMarker = undefined
+        }
       },
     })
   }
@@ -435,7 +462,7 @@ export default class TownScene extends Phaser.Scene {
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       // Get pointer coordinates
       const x = Phaser.Math.Clamp(pointer.worldX, 25, 935)
-      const y = Phaser.Math.Clamp(pointer.worldY, 160, 490)
+      const y = Phaser.Math.Clamp(pointer.worldY, 170, 520)
 
       // Calculate distance to destination
       const distance = Phaser.Math.Distance.Between(
@@ -445,8 +472,11 @@ export default class TownScene extends Phaser.Scene {
         y,
       )
 
-      // Stop if already at destination
-      if (distance < 5) return
+      // Fade the marker if the destination is too close.
+      if (distance < 5) {
+        this.fadeDestinationMarker()
+        return
+      }
 
       const direction = x < this.player.x ? -1 : 1
 
@@ -464,31 +494,25 @@ export default class TownScene extends Phaser.Scene {
       const marker = this.add.container(x, y)
 
       // Outer ring.
-      const ring = this.add.circle(0, 0, 18, 0x6cc8ff, 0)
+      const ring = this.add.ellipse(0, 0, 36, 22, 0x6cc8ff, 0)
       ring.setStrokeStyle(2, 0x6cc8ff, 0.8)
 
-      marker.add([ring])
+      // Inner dot.
+      const dot = this.add.circle(0, 0, 3, 0x6cc8ff, 1)
+
+      marker.add([ring, dot])
       marker.setDepth(y - 1)
 
       this.destinationMarker = marker
 
-      // Keep the ring at full size briefly.
-      this.time.delayedCall(100, () => {
-        // Shrink and fade out the marker.
-        this.tweens.add({
-          targets: marker,
-          scale: 0,
-          alpha: 0,
-          duration: 400,
-          ease: 'Sine.easeIn',
-          onComplete: () => {
-            marker.destroy()
-
-            if (this.destinationMarker === marker) {
-              this.destinationMarker = undefined
-            }
-          },
-        })
+      // Briefly pulse the outer ring.
+      this.tweens.add({
+        targets: ring,
+        scale: 1.25,
+        alpha: 0.4,
+        duration: 150,
+        ease: 'Sine.easeOut',
+        yoyo: true,
       })
 
       // Send the movement request to the server.
