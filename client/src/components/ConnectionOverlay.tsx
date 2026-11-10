@@ -14,8 +14,8 @@ function ConnectionOverlay({
   if (!isReconnecting && !connectionError) return null
 
   return (
-    <div className="connection-overlay">
-      <div className="connection-dialog">
+    <div className="game-dialog-overlay">
+      <div className="game-dialog">
         {isReconnecting ? (
           <>
             <h2>Reconnecting...</h2>
@@ -25,7 +25,7 @@ function ConnectionOverlay({
           <>
             <h2>Connection Lost</h2>
             <p>{connectionError}</p>
-            <button className="connection-button" onClick={onReturn}>
+            <button className="game-dialog-button" onClick={onReturn}>
               Return to Character Selection
             </button>
           </>

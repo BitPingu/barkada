@@ -6,6 +6,7 @@ type GameHeaderProps = {
   connectionError: string | null
   isReconnecting: boolean
   room: Room | null
+  onLeaveGame: () => void
 }
 
 function GameHeader({
@@ -14,45 +15,61 @@ function GameHeader({
   connectionError,
   isReconnecting,
   room,
+  onLeaveGame,
 }: GameHeaderProps) {
   return (
     <header className="game-header">
-      <div className="brand">
-        <div className="brand-mark">b</div>
-        <h1>barkada</h1>
-      </div>
-
-      <div className="room-info">
-        <div className="room-name">
-          <span>{roomName || 'Room'}</span>
+      <div className="header-top-row">
+        <div className="brand">
+          <div className="brand-mark">b</div>
+          <h1>barkada</h1>
         </div>
 
-        <div className="room-player-count">
-          {playerCount} {playerCount === 1 ? 'player' : 'players'} online
-        </div>
+        {room && (
+          <button
+            className="leave-game-button"
+            type="button"
+            onClick={onLeaveGame}
+            aria-label="Leave Game"
+          >
+            <span className="leave-game-icon" aria-hidden="true">
+              ↪
+            </span>
+            <span className="leave-game-label">Leave Game</span>
+          </button>
+        )}
       </div>
 
-      <div className="connection-status">
-        <span
-          className={
-            connectionError
-              ? 'status-dot'
+      <div className="header-bottom-row">
+        <div className="connection-status">
+          <span
+            className={
+              connectionError
+                ? 'status-dot disconnected'
+                : isReconnecting
+                  ? 'status-dot reconnecting'
+                  : room
+                    ? 'status-dot connected'
+                    : 'status-dot connecting'
+            }
+          />
+          <span>
+            {connectionError
+              ? 'Disconnected'
               : isReconnecting
-                ? 'status-dot reconnecting'
+                ? 'Reconnecting...'
                 : room
-                  ? 'status-dot connected'
-                  : 'status-dot connecting'
-          }
-        />
-        <span>
-          {connectionError
-            ? 'Disconnected'
-            : isReconnecting
-              ? 'Reconnecting...'
-              : room
-                ? 'Connected'
-                : 'Connecting...'}
-        </span>
+                  ? 'Connected'
+                  : 'Connecting...'}
+          </span>
+        </div>
+
+        <div className="room-info">
+          <span className="room-name">{roomName || 'Room'}</span>
+          <span className="room-player-count">
+            {playerCount} {playerCount === 1 ? 'player' : 'players'} online
+          </span>
+        </div>
       </div>
     </header>
   )

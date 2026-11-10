@@ -243,6 +243,29 @@ function useGameConnection() {
     setConnectionError(null)
   }
 
+  // Intentionally leave the game and return to character selection.
+  async function leaveGame() {
+    const connection = roomRef.current
+
+    // Clear the room reference so onLeave doesn't report an expired session.
+    roomRef.current = null
+
+    // Clear the saved reconnection data.
+    sessionStorage.removeItem('barkada-reconnection-token')
+    sessionStorage.removeItem('barkada-character-type')
+
+    // Reset the connection state.
+    setRoom(null)
+    setIsJoining(false)
+    setIsReconnecting(false)
+    setConnectionError(null)
+
+    // Leave the Colyseus room.
+    if (connection) {
+      await connection.leave()
+    }
+  }
+
   return {
     room,
     characterType,
@@ -255,6 +278,7 @@ function useGameConnection() {
     roomName,
     joinGame,
     returnToCharacterSelection,
+    leaveGame,
   }
 }
 

@@ -1,8 +1,9 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import GameHeader from './components/GameHeader'
 import CharacterSelection from './components/CharacterSelection'
 import ConnectionOverlay from './components/ConnectionOverlay'
 import ChatBar from './components/ChatBar'
+import LeaveGameDialog from './components/LeaveGameDialog'
 import useGameConnection from './hooks/useGameConnection'
 import './App.css'
 
@@ -25,10 +26,25 @@ function App() {
     roomName,
     joinGame,
     returnToCharacterSelection,
+    leaveGame,
   } = useGameConnection()
 
   // Disable toolbar interactions while a dialogue is open.
   const isDialogueOpen = isReconnecting || Boolean(connectionError)
+
+  // Track whether the leave game confirmation dialog is open.
+  const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false)
+
+  // Open the leave game confirmation dialog.
+  function handleLeaveGame() {
+    setIsLeaveDialogOpen(true)
+  }
+
+  // Confirm leaving the game.
+  function handleConfirmLeaveGame() {
+    setIsLeaveDialogOpen(false)
+    void leaveGame()
+  }
 
   return (
     <main className="game-page">
@@ -39,7 +55,16 @@ function App() {
         connectionError={connectionError}
         isReconnecting={isReconnecting}
         room={room}
+        onLeaveGame={handleLeaveGame}
       />
+
+      {/* Leave game confirmation dialog. */}
+      {isLeaveDialogOpen && (
+        <LeaveGameDialog
+          onConfirm={handleConfirmLeaveGame}
+          onCancel={() => setIsLeaveDialogOpen(false)}
+        />
+      )}
 
       {!room ? (
         // Character selection screen.
