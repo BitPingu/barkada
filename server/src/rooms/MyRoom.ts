@@ -152,15 +152,28 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
 
   // When a player unexpectedly disconnects.
   onDrop(client: Client, code: CloseCode) {
-    console.log(client.sessionId, 'dropped connection!', code)
+    console.log(
+      new Date().toISOString(),
+      client.sessionId,
+      'dropped connection!',
+      code,
+    )
 
     // Allow the player 60 seconds to reconnect.
     this.allowReconnection(client, 60)
       .then((reconnectedClient) => {
-        console.log(reconnectedClient.sessionId, 'reconnected successfully!')
+        console.log(
+          new Date().toISOString(),
+          reconnectedClient.sessionId,
+          'reconnected successfully!',
+        )
       })
       .catch(() => {
-        console.log(client.sessionId, 'failed to reconnect.')
+        console.log(
+          new Date().toISOString(),
+          client.sessionId,
+          'failed to reconnect.',
+        )
       })
   }
 

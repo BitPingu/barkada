@@ -109,10 +109,9 @@ function App() {
 
       roomRef.current = null
       setIsReconnecting(false)
-      setConnectionError('Your connection was lost. Please rejoin.')
-
-      sessionStorage.removeItem('barkada-reconnection-token')
-      sessionStorage.removeItem('barkada-character-type')
+      setConnectionError(
+        'Your previous session expired. Please rejoin the game.',
+      )
     })
 
     // Update the count whenever the room state changes.
@@ -169,11 +168,15 @@ function App() {
     }
   }, [room])
 
-  // Attempt to restore an existing session after a page refresh.
+  // Restore an existing session after a page refresh or when returning to the tab.
   useEffect(() => {
     let isActive = true
+    let isRecovering = false
 
     async function recoverSession() {
+      // Avoid duplicate attempts or reconnecting an existing room.
+      if (isRecovering || roomRef.current) return
+
       const token = sessionStorage.getItem('barkada-reconnection-token')
       const savedCharacterType = sessionStorage.getItem(
         'barkada-character-type',
@@ -181,6 +184,7 @@ function App() {
 
       if (!token || !savedCharacterType) return
 
+      isRecovering = true
       setIsJoining(true)
       setCharacterType(savedCharacterType as CharacterType)
 
@@ -205,18 +209,36 @@ function App() {
         if (!isActive) return
 
         console.error('Failed to recover session:', error)
+
         sessionStorage.removeItem('barkada-reconnection-token')
         sessionStorage.removeItem('barkada-character-type')
+
+        setConnectionError(
+          'Your previous session expired. Please select a character to rejoin.',
+        )
+
         setIsJoining(false)
       } finally {
         recoveryPromiseRef.current = null
+        isRecovering = false
       }
     }
 
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible') {
+        void recoverSession()
+      }
+    }
+
+    // Recover immediately when the app loads.
     void recoverSession()
+
+    // Also attempt recovery when the user returns to the browser tab.
+    document.addEventListener('visibilitychange', handleVisibilityChange)
 
     return () => {
       isActive = false
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [setupRoomConnection])
 
