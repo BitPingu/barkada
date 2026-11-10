@@ -93,10 +93,13 @@ function App() {
       setIsReconnecting(false)
       setConnectionError(null)
 
-      sessionStorage.setItem(
-        'barkada-reconnection-token',
-        connection.reconnectionToken,
-      )
+      queueMicrotask(() => {
+        if (roomRef.current !== connection) return
+
+        const refreshedToken = connection.reconnectionToken
+
+        sessionStorage.setItem('barkada-reconnection-token', refreshedToken)
+      })
     })
 
     connection.onLeave((code, reason) => {

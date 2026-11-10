@@ -247,11 +247,14 @@
   justify-content: center;
   width: 180px;
   height: 190px;
+  max-width: 100%;
   padding: 10px;
   border: 2px solid #d5dee8;
   border-radius: 10px;
   background: #f5f7fa;
   cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
   transition:
     background 0.2s,
     border-color 0.2s,
@@ -264,6 +267,10 @@
   justify-content: center;
   width: 100%;
   height: 100%;
+}
+
+.character-option canvas {
+  pointer-events: none;
 }
 
 .character-option:hover {
@@ -502,5 +509,16 @@
   .connection-status {
     padding: 7px 10px;
     font-size: 12px;
+  }
+
+  .character-option {
+    width: 130px;
+    height: 140px;
+    padding: 6px;
+  }
+
+  .character-option canvas {
+    width: 115px;
+    height: 115px;
   }
 }
