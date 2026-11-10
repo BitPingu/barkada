@@ -10,6 +10,7 @@ export function createPlayerCharacter(
   name: string,
   characterType: CharacterType = 'boy',
   showName: boolean = true,
+  isLocalPlayer: boolean = false,
 ) {
   // Create placeholder human character
   const player = scene.add.container(x, y)
@@ -17,9 +18,17 @@ export function createPlayerCharacter(
   // Create a subtle shadow beneath the character.
   const shadow = scene.add.ellipse(0, -1, 24, 9, 0x26384b, 0.2)
 
+  // Create a subtle ring to identify the local player.
+  const playerIndicator = isLocalPlayer ? scene.add.ellipse(0, 0, 38, 13) : null
+
+  if (playerIndicator) {
+    playerIndicator.setStrokeStyle(2, 0x8fd8ff, 0.8)
+    playerIndicator.setFillStyle(0x000000, 0)
+  }
+
   const body = scene.add.graphics()
-  const arms = scene.add.container(0, 0)
-  const legs = scene.add.container(0, 0)
+  const arms = scene.add.container(0, 0).setName('arms')
+  const legs = scene.add.container(0, 0).setName('legs')
 
   const leftArm = scene.add.graphics() as Phaser.GameObjects.Graphics
   const rightArm = scene.add.graphics() as Phaser.GameObjects.Graphics
@@ -225,6 +234,10 @@ export function createPlayerCharacter(
     player.add([shadow, legs, body, arms])
   }
 
+  if (playerIndicator) {
+    player.addAt(playerIndicator, 0)
+  }
+
   // Set the player's rendering depth.
   player.setDepth(y)
 
@@ -236,8 +249,8 @@ export function startWalkingAnimation(
   scene: Phaser.Scene,
   character: Phaser.GameObjects.Container,
 ) {
-  const legs = character.getAt(1) as Phaser.GameObjects.Container
-  const arms = character.getAt(3) as Phaser.GameObjects.Container
+  const legs = character.getByName('legs') as Phaser.GameObjects.Container
+  const arms = character.getByName('arms') as Phaser.GameObjects.Container
 
   const leftLeg = legs.getAt(0) as Phaser.GameObjects.Graphics
   const rightLeg = legs.getAt(1) as Phaser.GameObjects.Graphics

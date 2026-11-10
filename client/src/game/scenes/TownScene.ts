@@ -93,8 +93,8 @@ export default class TownScene extends Phaser.Scene {
         }
 
         // Stop the walking animation.
-        const legs = character.getAt(1) as Phaser.GameObjects.Container
-        const arms = character.getAt(3) as Phaser.GameObjects.Container
+        const legs = character.getByName('legs') as Phaser.GameObjects.Container
+        const arms = character.getByName('arms') as Phaser.GameObjects.Container
 
         const leftLeg = legs.getAt(0) as Phaser.GameObjects.Graphics
         const rightLeg = legs.getAt(1) as Phaser.GameObjects.Graphics
@@ -345,6 +345,8 @@ export default class TownScene extends Phaser.Scene {
       320,
       'You',
       this.characterType,
+      true,
+      true,
     )
     this.player = localPlayer
 
