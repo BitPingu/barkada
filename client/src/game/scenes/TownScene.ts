@@ -349,17 +349,25 @@ export default class TownScene extends Phaser.Scene {
     this.player = localPlayer
 
     // Show a movement hint for new players.
-    const movementHint = this.add.container(480, 495)
+    const movementHint = this.add.container(480, 40)
 
     const hintBackground = this.add.graphics()
-    hintBackground.fillStyle(0x26384b, 0.8)
-    hintBackground.fillRoundedRect(-95, -16, 190, 32, 8)
+    hintBackground.fillStyle(0x26384b, 0.85)
+    hintBackground.fillRoundedRect(-110, -17, 220, 34, 8)
 
     const hintText = this.add.text(0, 0, 'Click anywhere to move!', {
-      fontSize: '13px',
+      fontSize: '16px',
+      fontStyle: 'bold',
       color: '#ffffff',
       fontFamily: 'Arial',
       resolution: 3,
+      shadow: {
+        offsetX: 1,
+        offsetY: 1,
+        color: '#000000',
+        blur: 1,
+        fill: true,
+      },
     })
 
     hintText.setOrigin(0.5)

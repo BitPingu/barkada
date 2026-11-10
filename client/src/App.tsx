@@ -345,6 +345,16 @@ function App() {
           <h1>barkada</h1>
         </div>
 
+        <div className="room-info">
+          <div className="room-name">
+            <span>{roomName || 'Room'}</span>
+          </div>
+
+          <div className="room-player-count">
+            {playerCount} {playerCount === 1 ? 'player' : 'players'} online
+          </div>
+        </div>
+
         <div className="connection-status">
           <span
             className={
@@ -354,7 +364,7 @@ function App() {
                   ? 'status-dot reconnecting'
                   : room
                     ? 'status-dot connected'
-                    : 'status-dot'
+                    : 'status-dot connecting'
             }
           />
           <span>
@@ -368,16 +378,6 @@ function App() {
           </span>
         </div>
       </header>
-
-      <div className="room-info">
-        <div className="room-name">
-          <span>{roomName || 'Room'}</span>
-        </div>
-
-        <div className="room-player-count">
-          {playerCount} {playerCount === 1 ? 'player' : 'players'} online
-        </div>
-      </div>
 
       {!room ? (
         // Character selection screen.
