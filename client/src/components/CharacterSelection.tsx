@@ -4,6 +4,8 @@ import CharacterPreview from '../game/CharacterPreview'
 type CharacterSelectionProps = {
   characterType: CharacterType | null
   setCharacterType: (type: CharacterType) => void
+  displayName: string
+  setDisplayName: (name: string) => void
   isJoining: boolean
   joinError: string | null
   onJoin: () => void
@@ -12,6 +14,8 @@ type CharacterSelectionProps = {
 function CharacterSelection({
   characterType,
   setCharacterType,
+  displayName,
+  setDisplayName,
   isJoining,
   joinError,
   onJoin,
@@ -19,7 +23,20 @@ function CharacterSelection({
   return (
     <section className="character-selection">
       <h2>Welcome to barkada!</h2>
-      <p>Select a character to enter.</p>
+
+      <div className="display-name-field">
+        <label htmlFor="display-name">What should we call you?</label>
+        <input
+          id="display-name"
+          type="text"
+          value={displayName}
+          onChange={(event) => setDisplayName(event.target.value)}
+          placeholder="Enter a name"
+          maxLength={16}
+        />
+      </div>
+
+      <p>Choose a character</p>
 
       <div
         className="character-options"
@@ -49,7 +66,7 @@ function CharacterSelection({
       <button
         className="join-button"
         onClick={onJoin}
-        disabled={!characterType || isJoining}
+        disabled={!characterType || !displayName.trim() || isJoining}
       >
         {isJoining ? 'Joining...' : 'Join Game'}
       </button>

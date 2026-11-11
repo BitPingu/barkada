@@ -1,4 +1,4 @@
-import { Room, Client, CloseCode } from 'colyseus'
+import { Room, Client, CloseCode, ServerError } from 'colyseus'
 import { MyRoomState } from './schema/MyRoomState.js'
 import { Player } from './schema/Player.js'
 
@@ -130,7 +130,28 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
   }
 
   // When a player joins.
-  onJoin(client: Client, options: { characterType?: string }) {
+  onJoin(
+    client: Client,
+    options: {
+      characterType?: string
+      displayName?: string
+    },
+  ) {
+    // Validate the player's display name.
+    if (typeof options.displayName !== 'string') {
+      throw new ServerError(400, 'A display name is required.')
+    }
+
+    const displayName = options.displayName.trim()
+
+    if (!displayName) {
+      throw new ServerError(400, 'A display name is required.')
+    }
+
+    if (displayName.length > 16) {
+      throw new ServerError(400, 'Display name cannot exceed 16 characters.')
+    }
+
     // Create a player entry using the client's session ID.
     const player = new Player()
 
@@ -139,7 +160,7 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
     player.y = 320
 
     // Give the player a temporary display name.
-    player.name = `Guest ${this.state.players.size + 1}`
+    player.name = displayName
 
     // Assign the selected character type.
     player.characterType = options.characterType === 'girl' ? 'girl' : 'boy'

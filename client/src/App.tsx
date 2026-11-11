@@ -19,6 +19,8 @@ function App() {
     room,
     characterType,
     setCharacterType,
+    displayName,
+    setDisplayName,
     isJoining,
     isReconnecting,
     connectionError,
@@ -72,6 +74,8 @@ function App() {
           <CharacterSelection
             characterType={characterType}
             setCharacterType={setCharacterType}
+            displayName={displayName}
+            setDisplayName={setDisplayName}
             isJoining={isJoining}
             joinError={joinError}
             onJoin={joinGame}
@@ -110,7 +114,11 @@ function App() {
                   </div>
                 }
               >
-                <Game room={room} characterType={characterType!} />
+                <Game
+                  room={room}
+                  characterType={characterType!}
+                  displayName={displayName}
+                />
               </Suspense>
             </div>
           </div>

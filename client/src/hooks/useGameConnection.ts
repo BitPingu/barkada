@@ -10,6 +10,11 @@ function useGameConnection() {
   // Store the selected character type.
   const [characterType, setCharacterType] = useState<CharacterType | null>(null)
 
+  // Store the player's display name, restoring it from the current session.
+  const [displayName, setDisplayName] = useState(
+    () => sessionStorage.getItem('barkada-display-name') ?? '',
+  )
+
   // Tracks whether the player is joining the game.
   const [isJoining, setIsJoining] = useState(false)
 
@@ -93,12 +98,19 @@ function useGameConnection() {
     })
   }, [])
 
-  // Join the game using the selected character type.
+  // Join the game using the selected character type and display name.
   async function joinGame() {
     // Clear any previous join error.
     setJoinError(null)
 
     if (!characterType || isJoining) return
+
+    const trimmedDisplayName = displayName.trim()
+
+    if (!trimmedDisplayName) {
+      setJoinError('Please enter a display name.')
+      return
+    }
 
     setIsJoining(true)
 
@@ -106,6 +118,7 @@ function useGameConnection() {
       // Join the room and send the selected character type.
       const connection = await client.join('town_square', {
         characterType,
+        displayName: trimmedDisplayName,
       })
 
       // Save the session details to support reconnection after a refresh.
@@ -115,6 +128,7 @@ function useGameConnection() {
       )
 
       sessionStorage.setItem('barkada-character-type', characterType)
+      sessionStorage.setItem('barkada-display-name', trimmedDisplayName)
 
       setupRoomConnection(connection)
       setIsJoining(false)
@@ -301,6 +315,8 @@ function useGameConnection() {
     room,
     characterType,
     setCharacterType,
+    displayName,
+    setDisplayName,
     isJoining,
     isReconnecting,
     connectionError,

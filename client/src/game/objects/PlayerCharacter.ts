@@ -210,10 +210,17 @@ export function createPlayerCharacter(
       fontFamily: 'Arial',
       fontSize: '14px',
       color: '#ffffff',
-      stroke: '#26384b',
+      stroke: '#526477',
       strokeThickness: 3,
       align: 'center',
       resolution: 3,
+      shadow: {
+        offsetX: 0,
+        offsetY: 2,
+        color: '#26384b',
+        blur: 4,
+        fill: true,
+      },
     })
 
     // Center the name label below the character.

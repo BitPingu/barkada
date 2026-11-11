@@ -18,6 +18,9 @@ export default class TownScene extends Phaser.Scene {
   // Stores the selected character type.
   private characterType!: CharacterType
 
+  // Stores the player's display name.
+  private displayName!: string
+
   // Stores characters belonging to other players.
   private remotePlayers = new Map<string, Phaser.GameObjects.Container>()
 
@@ -35,11 +38,16 @@ export default class TownScene extends Phaser.Scene {
     super('TownScene')
   }
 
-  // Receives the Colyseus room connection and selected character type.
-  init(data: { room: Room<MyRoomState>; characterType: CharacterType }) {
-    // Store the room connection and selected character type.
+  // Receives the Colyseus room connection, selected character type, and display name.
+  init(data: {
+    room: Room<MyRoomState>
+    characterType: CharacterType
+    displayName: string
+  }) {
+    // Store the room connection, selected character type, and display name.
     this.room = data.room
     this.characterType = data.characterType
+    this.displayName = data.displayName
   }
 
   // Animates a character toward a synchronized position.
@@ -322,7 +330,7 @@ export default class TownScene extends Phaser.Scene {
       this,
       480,
       320,
-      'You',
+      this.displayName,
       this.characterType,
       true,
       true,

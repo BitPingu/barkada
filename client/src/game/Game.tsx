@@ -9,10 +9,11 @@ import type { CharacterType } from './objects/PlayerCharacter'
 interface GameProps {
   room: Room<MyRoomState> // require Colyseus room
   characterType: CharacterType
+  displayName: string
 }
 
 // Initializes and manages the Phaser game.
-export default function Game({ room, characterType }: GameProps) {
+export default function Game({ room, characterType, displayName }: GameProps) {
   // Reference to div.
   const gameRef = useRef<HTMLDivElement>(null)
 
@@ -42,7 +43,11 @@ export default function Game({ room, characterType }: GameProps) {
       if (!active) return
 
       // Pass the Colyseus room connection to the scene.
-      game.scene.add('TownScene', TownScene, true, { room, characterType })
+      game.scene.add('TownScene', TownScene, true, {
+        room,
+        characterType,
+        displayName,
+      })
     })
 
     // Clean up.
@@ -51,7 +56,7 @@ export default function Game({ room, characterType }: GameProps) {
       game.destroy(true)
       game.canvas?.remove()
     }
-  }, [room, characterType])
+  }, [room, characterType, displayName])
 
   // HTML element Phaser uses as parent
   return <div ref={gameRef} />
