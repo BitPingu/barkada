@@ -5,6 +5,7 @@ import {
   playground,
   createRouter,
   createEndpoint,
+  matchMaker,
 } from 'colyseus'
 
 /**
@@ -17,7 +18,17 @@ const server = defineServer({
    * Define your room handlers:
    */
   rooms: {
-    my_room: defineRoom(MyRoom),
+    town_square: defineRoom(MyRoom),
+  },
+
+  beforeListen: async () => {
+    // Wait until the Colyseus matchmaker is initialized.
+    await matchMaker.onReady
+
+    // Create the Town Square when the server starts.
+    await matchMaker.createRoom('town_square', {})
+
+    console.log('Town Square is ready.')
   },
 
   /**
@@ -31,6 +42,25 @@ const server = defineServer({
     api_hello: createEndpoint('/api/hello', { method: 'GET' }, async (ctx) => {
       return { message: 'Hello World' }
     }),
+    api_town_status: createEndpoint(
+      '/api/town-status',
+      { method: 'GET' },
+      async () => {
+        // Find all active Town Square rooms.
+        const rooms = await matchMaker.query({ name: 'town_square' })
+
+        // Add up the number of connected players.
+        const playerCount = rooms.reduce(
+          (total, room) => total + room.clients,
+          0,
+        )
+
+        return {
+          roomName: 'Town Square',
+          playerCount,
+        }
+      },
+    ),
   }),
 
   /**

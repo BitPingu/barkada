@@ -3,14 +3,17 @@ import Phaser from 'phaser'
 import type { Room } from '@colyseus/sdk'
 import type { MyRoomState } from './types'
 import TownScene from './scenes/TownScene'
+import type { CharacterType } from './objects/PlayerCharacter'
 
 // Defines the props passed from React.
 interface GameProps {
   room: Room<MyRoomState> // require Colyseus room
+  characterType: CharacterType
+  displayName: string
 }
 
 // Initializes and manages the Phaser game.
-export default function Game({ room }: GameProps) {
+export default function Game({ room, characterType, displayName }: GameProps) {
   // Reference to div.
   const gameRef = useRef<HTMLDivElement>(null)
 
@@ -40,15 +43,20 @@ export default function Game({ room }: GameProps) {
       if (!active) return
 
       // Pass the Colyseus room connection to the scene.
-      game.scene.add('TownScene', TownScene, true, { room })
+      game.scene.add('TownScene', TownScene, true, {
+        room,
+        characterType,
+        displayName,
+      })
     })
 
     // Clean up.
     return () => {
       active = false
       game.destroy(true)
+      game.canvas?.remove()
     }
-  }, [room])
+  }, [room, characterType, displayName])
 
   // HTML element Phaser uses as parent
   return <div ref={gameRef} />

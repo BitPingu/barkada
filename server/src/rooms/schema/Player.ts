@@ -8,4 +8,7 @@ export const Player = schema({
 
   // Player's display name.
   name: t.string().default('Guest'),
+
+  // Player's selected character type.
+  characterType: t.string().default('boy'),
 })

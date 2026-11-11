@@ -1,13 +1,26 @@
-import { Room, Client, CloseCode } from 'colyseus'
+import { Room, Client, CloseCode, ServerError } from 'colyseus'
 import { MyRoomState } from './schema/MyRoomState.js'
 import { Player } from './schema/Player.js'
 
 // Emojis players are allowed to send.
-const ALLOWED_EMOJIS = ['😀', '😂', '😢', '😮', '❤️', '👋']
+const ALLOWED_EMOJIS = [
+  '😀',
+  '😂',
+  '😭',
+  '😮',
+  '😡',
+  '🥺',
+  '❤️',
+  '🔥',
+  '🎶',
+  '👍',
+  '👋',
+  '🙏',
+]
 
 export class MyRoom extends Room<{ state: MyRoomState }> {
   // Maximum number of players allowed in one room.
-  maxClients = 4
+  maxClients = 20
 
   // Initialize the synchronized room state.
   state = new MyRoomState()
@@ -16,6 +29,9 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
   private lastChatMessage = new Map<string, number>()
 
   onCreate(options: any) {
+    // Keep Town Square available when everyone leaves.
+    this.autoDispose = false
+
     console.log('Room created:', this.roomId)
 
     // Handle player movement requests.
@@ -38,7 +54,7 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
 
       // Clamp coordinates to the game boundaries.
       player.x = Math.max(25, Math.min(935, message.x))
-      player.y = Math.max(160, Math.min(490, message.y))
+      player.y = Math.max(170, Math.min(520, message.y))
     })
 
     // Handle incoming chat messages.
@@ -114,7 +130,28 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
   }
 
   // When a player joins.
-  onJoin(client: Client, options: any) {
+  onJoin(
+    client: Client,
+    options: {
+      characterType?: string
+      displayName?: string
+    },
+  ) {
+    // Validate the player's display name.
+    if (typeof options.displayName !== 'string') {
+      throw new ServerError(400, 'A display name is required.')
+    }
+
+    const displayName = options.displayName.trim()
+
+    if (!displayName) {
+      throw new ServerError(400, 'A display name is required.')
+    }
+
+    if (displayName.length > 16) {
+      throw new ServerError(400, 'Display name cannot exceed 16 characters.')
+    }
+
     // Create a player entry using the client's session ID.
     const player = new Player()
 
@@ -123,12 +160,42 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
     player.y = 320
 
     // Give the player a temporary display name.
-    player.name = `Guest ${this.state.players.size + 1}`
+    player.name = displayName
+
+    // Assign the selected character type.
+    player.characterType = options.characterType === 'girl' ? 'girl' : 'boy'
 
     // Add the player to the synchronized room state.
     this.state.players.set(client.sessionId, player)
 
     console.log(client.sessionId, 'joined!')
+  }
+
+  // When a player unexpectedly disconnects.
+  onDrop(client: Client, code: CloseCode) {
+    console.log(
+      new Date().toISOString(),
+      client.sessionId,
+      'dropped connection!',
+      code,
+    )
+
+    // Allow the player 60 seconds to reconnect.
+    this.allowReconnection(client, 60)
+      .then((reconnectedClient) => {
+        console.log(
+          new Date().toISOString(),
+          reconnectedClient.sessionId,
+          'reconnected successfully!',
+        )
+      })
+      .catch(() => {
+        console.log(
+          new Date().toISOString(),
+          client.sessionId,
+          'failed to reconnect.',
+        )
+      })
   }
 
   // When a player leaves.

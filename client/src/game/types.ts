@@ -7,6 +7,7 @@ export interface PlayerState {
   x: number
   y: number
   name: string
+  characterType: 'boy' | 'girl'
 }
 
 // Defines the shared state of a multiplayer room.
