@@ -41,6 +41,7 @@ function useGameConnection() {
     setRoom(connection)
 
     connection.onDrop((code, reason) => {
+      // Ignore events from connections that are no longer active.
       if (roomRef.current !== connection) return
 
       console.warn('Connection dropped:', code, reason)
@@ -49,12 +50,13 @@ function useGameConnection() {
     })
 
     connection.onReconnect(() => {
+      // Ignore events from connections that are no longer active.
       if (roomRef.current !== connection) return
 
-      console.log('Reconnected to room')
       setIsReconnecting(false)
       setConnectionError(null)
 
+      // Save the refreshed token after the reconnection callback completes.
       queueMicrotask(() => {
         if (roomRef.current !== connection) return
 
@@ -65,6 +67,7 @@ function useGameConnection() {
     })
 
     connection.onLeave((code, reason) => {
+      // Ignore events from connections that are no longer active.
       if (roomRef.current !== connection) return
 
       console.warn('Left room:', code, reason)
@@ -83,6 +86,7 @@ function useGameConnection() {
 
     // Update the count whenever the room state changes.
     connection.onStateChange((state) => {
+      // Ignore updates from connections that are no longer active.
       if (roomRef.current !== connection) return
 
       setPlayerCount(state.players.size)
@@ -104,6 +108,7 @@ function useGameConnection() {
         characterType,
       })
 
+      // Save the session details to support reconnection after a refresh.
       sessionStorage.setItem(
         'barkada-reconnection-token',
         connection.reconnectionToken,
@@ -119,6 +124,7 @@ function useGameConnection() {
 
       const errorCode = (error as { code?: number }).code
 
+      // Handle a full room separately from other connection errors.
       if (errorCode === 521) {
         setJoinError('Sorry! The server is currently full.')
       } else {
@@ -150,6 +156,7 @@ function useGameConnection() {
         'barkada-character-type',
       )
 
+      // Skip recovery if no saved session exists.
       if (!token || !savedCharacterType) return
 
       isRecovering = true
@@ -157,16 +164,19 @@ function useGameConnection() {
       setCharacterType(savedCharacterType as CharacterType)
 
       try {
+        // Reuse an ongoing recovery attempt if one already exists.
         if (!recoveryPromiseRef.current) {
           recoveryPromiseRef.current = client.reconnect(token)
         }
 
         const connection = await recoveryPromiseRef.current
 
+        // Ignore results if the component has been unmounted.
         if (!isActive) return
 
         setupRoomConnection(connection)
 
+        // Save the refreshed reconnection token.
         sessionStorage.setItem(
           'barkada-reconnection-token',
           connection.reconnectionToken,
@@ -178,6 +188,7 @@ function useGameConnection() {
 
         console.error('Failed to recover session:', error)
 
+        // Clear invalid session data so the player can join a new room.
         sessionStorage.removeItem('barkada-reconnection-token')
         sessionStorage.removeItem('barkada-character-type')
 
@@ -185,11 +196,13 @@ function useGameConnection() {
 
         setIsJoining(false)
       } finally {
+        // Reset recovery state regardless of the outcome.
         recoveryPromiseRef.current = null
         isRecovering = false
       }
     }
 
+    // Attempt session recovery when the player returns to the tab.
     function handleVisibilityChange() {
       if (document.visibilityState === 'visible') {
         void recoverSession()
@@ -203,6 +216,7 @@ function useGameConnection() {
     document.addEventListener('visibilitychange', handleVisibilityChange)
 
     return () => {
+      // Prevent pending recovery attempts from updating an unmounted component.
       isActive = false
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
@@ -233,6 +247,7 @@ function useGameConnection() {
     const intervalId = window.setInterval(fetchPlayerCount, 5000)
 
     return () => {
+      // Prevent pending requests from updating state after cleanup.
       isActive = false
       window.clearInterval(intervalId)
     }
@@ -241,6 +256,8 @@ function useGameConnection() {
   // Leave the current room and reset the connection state.
   function returnToCharacterSelection() {
     const connection = roomRef.current
+
+    // Clear the room reference immediately to prevent further connection attempts.
     roomRef.current = null
 
     // Clear any saved reconnection data.

@@ -37,11 +37,9 @@ export default class TownScene extends Phaser.Scene {
 
   // Receives the Colyseus room connection and selected character type.
   init(data: { room: Room<MyRoomState>; characterType: CharacterType }) {
-    // access to room connection
+    // Store the room connection and selected character type.
     this.room = data.room
     this.characterType = data.characterType
-
-    console.log('Connected to room:', data.room.roomId)
   }
 
   // Animates a character toward a synchronized position.
@@ -140,16 +138,6 @@ export default class TownScene extends Phaser.Scene {
     character: Phaser.GameObjects.Container,
     message: string,
   ) {
-    // Remove the player's previous chat bubble, if one exists.
-    const previousBubble = this.activeBubbles.get(sessionId)
-
-    if (previousBubble) {
-      previousBubble.destroy()
-    }
-
-    // Create the chat bubble container.
-    const bubble = this.add.container(0, -108)
-
     // Create the chat message text.
     const text = this.add.text(0, 0, message, {
       fontSize: '14px',
@@ -169,9 +157,72 @@ export default class TownScene extends Phaser.Scene {
     const height = text.height + paddingY * 2
 
     // Move taller chat bubbles higher above the character.
-    bubble.y -= Math.max(0, height - 36) / 2
+    const verticalOffset = -Math.max(0, height - 36) / 2
 
-    // Create the chat bubble background.
+    // Calculate display duration based on message length.
+    const displayDuration = Phaser.Math.Clamp(
+      3000 + message.length * 60,
+      4000,
+      12000,
+    )
+
+    // Create and display the chat bubble.
+    this.createBubble(
+      sessionId,
+      character,
+      text,
+      width,
+      height,
+      displayDuration,
+      verticalOffset,
+    )
+  }
+
+  // Display an emoji above a player's character.
+  private showEmojiBubble(
+    sessionId: string,
+    character: Phaser.GameObjects.Container,
+    emoji: string,
+  ) {
+    // Create the emoji text.
+    const emojiText = this.add.text(0, 0, emoji, {
+      fontSize: '28px',
+      fontFamily: 'Arial',
+      resolution: 3,
+    })
+
+    emojiText.setOrigin(0.5)
+
+    // Calculate the bubble dimensions.
+    const padding = 8
+    const width = emojiText.width + padding * 2
+    const height = emojiText.height + padding * 2
+
+    // Create and display the emoji bubble.
+    this.createBubble(sessionId, character, emojiText, width, height, 5000)
+  }
+
+  // Create and display a bubble above a player's character.
+  private createBubble(
+    sessionId: string,
+    character: Phaser.GameObjects.Container,
+    content: Phaser.GameObjects.Text,
+    width: number,
+    height: number,
+    displayDuration: number,
+    verticalOffset = 0,
+  ) {
+    // Remove the player's previous bubble, if one exists.
+    const previousBubble = this.activeBubbles.get(sessionId)
+
+    if (previousBubble) {
+      previousBubble.destroy()
+    }
+
+    // Create the bubble container.
+    const bubble = this.add.container(0, -108 + verticalOffset)
+
+    // Create the bubble background.
     const background = this.add.graphics()
 
     background.fillStyle(0xffffff, 1)
@@ -191,23 +242,16 @@ export default class TownScene extends Phaser.Scene {
     background.lineBetween(-7, height / 2 - 1, 0, height / 2 + 8)
     background.lineBetween(0, height / 2 + 8, 7, height / 2 - 1)
 
-    // Add the background and text to the bubble.
-    bubble.add([background, text])
+    // Add the background and content to the bubble.
+    bubble.add([background, content])
 
     // Attach the bubble to the player's character.
     character.add(bubble)
 
-    // Track the player's active chat bubble.
+    // Track the player's active bubble.
     this.activeBubbles.set(sessionId, bubble)
 
-    // Calculate display duration based on message length.
-    const displayDuration = Phaser.Math.Clamp(
-      3000 + message.length * 60,
-      4000,
-      12000,
-    )
-
-    // Remove the chat bubble after the calculated duration.
+    // Remove the bubble after its display duration.
     this.time.delayedCall(displayDuration, () => {
       bubble.destroy()
 
@@ -218,82 +262,15 @@ export default class TownScene extends Phaser.Scene {
     })
   }
 
-  // Display an emoji above a player's character.
-  private showEmojiBubble(
-    sessionId: string,
-    character: Phaser.GameObjects.Container,
-    emoji: string,
-  ) {
-    // Remove the player's previous emoji bubble, if one exists.
-    const previousBubble = this.activeBubbles.get(sessionId)
-
-    if (previousBubble) {
-      previousBubble.destroy()
-    }
-
-    // Create a container above the player's character.
-    const bubble = this.add.container(0, -108)
-
-    // Create the emoji text.
-    const emojiText = this.add.text(0, 0, emoji, {
-      fontSize: '28px',
-      fontFamily: 'Arial',
-      resolution: 3,
-    })
-
-    emojiText.setOrigin(0.5)
-
-    // Define the bubble dimensions.
-    const padding = 8
-    const width = emojiText.width + padding * 2
-    const height = emojiText.height + padding * 2
-
-    // Create the speech bubble background.
-    const background = this.add.graphics()
-    background.fillStyle(0xffffff, 1)
-    background.lineStyle(2, 0x526477, 1)
-    background.fillRoundedRect(-width / 2, -height / 2, width, height, 8)
-    background.strokeRoundedRect(-width / 2, -height / 2, width, height, 8)
-
-    // Draw the speech bubble tail.
-    background.fillTriangle(
-      -7,
-      height / 2 - 1,
-      7,
-      height / 2 - 1,
-      0,
-      height / 2 + 8,
-    )
-    background.lineBetween(-7, height / 2 - 1, 0, height / 2 + 8)
-    background.lineBetween(0, height / 2 + 8, 7, height / 2 - 1)
-
-    // Add the background and emoji to the bubble.
-    bubble.add([background, emojiText])
-    character.add(bubble)
-
-    // Track the player's active emoji bubble.
-    this.activeBubbles.set(sessionId, bubble)
-
-    // Remove the emoji bubble after 5 seconds.
-    this.time.delayedCall(5000, () => {
-      bubble.destroy()
-
-      // Only remove the entry if it still belongs to this bubble.
-      if (this.activeBubbles.get(sessionId) === bubble) {
-        this.activeBubbles.delete(sessionId)
-      }
-    })
-  }
-
-  // Automatically called when the scene starts.
-  create() {
-    // Sky background
+  // Create the town environment.
+  private createTownEnvironment() {
+    // Sky background.
     this.add.rectangle(480, 270, 960, 540, 0x9bd8f5)
 
-    // Grassy ground
+    // Grassy ground.
     this.add.rectangle(480, 350, 960, 380, 0x78bd62)
 
-    // Grass variation
+    // Grass variation.
     const grass = this.add.graphics()
 
     grass.fillStyle(0x6eae59, 0.5)
@@ -305,7 +282,7 @@ export default class TownScene extends Phaser.Scene {
     grass.fillEllipse(300, 200, 160, 60)
     grass.fillEllipse(700, 420, 240, 70)
 
-    // Walking path
+    // Walking path.
     const path = this.add.graphics()
 
     path.fillStyle(0xd8c49a)
@@ -314,31 +291,33 @@ export default class TownScene extends Phaser.Scene {
     path.fillStyle(0xe8d6ae, 0.7)
     path.fillEllipse(480, 340, 620, 125)
 
-    // Buildings
+    // Buildings.
     const buildings = this.add.graphics()
 
-    // Left building
+    // Left building.
     buildings.fillStyle(0xe8a66b)
     buildings.fillRect(90, 55, 180, 120)
 
     buildings.fillStyle(0xb85c45)
     buildings.fillTriangle(90, 55, 180, -5, 270, 55)
 
-    // Middle building
+    // Middle building.
     buildings.fillStyle(0xf0d18a)
     buildings.fillRect(380, 25, 200, 150)
 
     buildings.fillStyle(0x9b634b)
     buildings.fillTriangle(380, 25, 480, -50, 580, 25)
 
-    // Right building
+    // Right building.
     buildings.fillStyle(0xb5d99b)
     buildings.fillRect(700, 55, 180, 120)
 
     buildings.fillStyle(0x658b58)
     buildings.fillTriangle(700, 55, 790, -5, 880, 55)
+  }
 
-    // Create the local player.
+  // Create the local player character.
+  private createLocalPlayer() {
     const localPlayer = createPlayerCharacter(
       this,
       480,
@@ -348,9 +327,12 @@ export default class TownScene extends Phaser.Scene {
       true,
       true,
     )
-    this.player = localPlayer
 
-    // Show a movement hint for new players.
+    this.player = localPlayer
+  }
+
+  // Create the movement hint.
+  private createMovementHint() {
     const movementHint = this.add.container(480, 50)
 
     const hintBackground = this.add.graphics()
@@ -374,89 +356,91 @@ export default class TownScene extends Phaser.Scene {
     movementHint.add([hintBackground, hintText])
     movementHint.setDepth(1000)
 
-    // Synchronize remote players with the Colyseus room.
-    const syncPlayers = () => {
-      const players = this.room.state?.players
+    return movementHint
+  }
 
-      // Wait until the initial room state is available.
-      if (!players) return
+  // Synchronize remote players with the Colyseus room.
+  private syncPlayers() {
+    const players = this.room.state?.players
 
-      // Keep track of remote players currently in the room.
-      const currentSessionIds = new Set<string>()
+    // Wait until the initial room state is available.
+    if (!players) return
 
-      // Iterate through all synchronized players.
-      players.forEach((player, sessionId) => {
-        let character: Phaser.GameObjects.Container
+    // Keep track of remote players currently in the room.
+    const currentSessionIds = new Set<string>()
 
-        // Use the existing character for the local player.
-        if (sessionId === this.room.sessionId) {
-          character = this.player
-        } else {
-          currentSessionIds.add(sessionId)
+    // Iterate through all synchronized players.
+    players.forEach((player, sessionId) => {
+      let character: Phaser.GameObjects.Container
 
-          // Look for an existing remote character.
-          let remoteCharacter = this.remotePlayers.get(sessionId)
+      // Use the existing character for the local player.
+      if (sessionId === this.room.sessionId) {
+        character = this.player
+      } else {
+        currentSessionIds.add(sessionId)
 
-          // Create a character if one doesn't exist.
-          if (!remoteCharacter) {
-            remoteCharacter = createPlayerCharacter(
-              this,
-              player.x,
-              player.y,
-              player.name,
-              player.characterType,
-            )
+        // Look for an existing remote character.
+        let remoteCharacter = this.remotePlayers.get(sessionId)
 
-            this.remotePlayers.set(sessionId, remoteCharacter)
+        // Create a character if one doesn't exist.
+        if (!remoteCharacter) {
+          remoteCharacter = createPlayerCharacter(
+            this,
+            player.x,
+            player.y,
+            player.name,
+            player.characterType,
+          )
 
-            // Store the initial position without triggering movement.
-            this.playerTargets.set(sessionId, {
-              x: player.x,
-              y: player.y,
-            })
-          }
+          this.remotePlayers.set(sessionId, remoteCharacter)
 
-          character = remoteCharacter
-        }
-
-        // Check whether the player's destination has changed.
-        const previousTarget = this.playerTargets.get(sessionId)
-
-        if (!previousTarget) {
-          // Set the initial position without animation.
-          character.setPosition(player.x, player.y)
-
+          // Store the initial position without triggering movement.
           this.playerTargets.set(sessionId, {
             x: player.x,
             y: player.y,
           })
-        } else if (
-          previousTarget.x !== player.x ||
-          previousTarget.y !== player.y
-        ) {
-          this.playerTargets.set(sessionId, {
-            x: player.x,
-            y: player.y,
-          })
-
-          // Animate toward the updated synchronized position.
-          this.moveCharacter(character, player.x, player.y)
         }
-      })
 
-      // Remove characters belonging to players who left.
-      for (const [sessionId, character] of this.remotePlayers) {
-        if (!currentSessionIds.has(sessionId)) {
-          character.destroy()
-          this.remotePlayers.delete(sessionId)
-          this.playerTargets.delete(sessionId)
-        }
+        character = remoteCharacter
+      }
+
+      // Check whether the player's destination has changed.
+      const previousTarget = this.playerTargets.get(sessionId)
+
+      if (!previousTarget) {
+        // Set the initial position without animation.
+        character.setPosition(player.x, player.y)
+
+        this.playerTargets.set(sessionId, {
+          x: player.x,
+          y: player.y,
+        })
+      } else if (
+        previousTarget.x !== player.x ||
+        previousTarget.y !== player.y
+      ) {
+        this.playerTargets.set(sessionId, {
+          x: player.x,
+          y: player.y,
+        })
+
+        // Animate toward the updated synchronized position.
+        this.moveCharacter(character, player.x, player.y)
+      }
+    })
+
+    // Remove characters belonging to players who left.
+    for (const [sessionId, character] of this.remotePlayers) {
+      if (!currentSessionIds.has(sessionId)) {
+        character.destroy()
+        this.remotePlayers.delete(sessionId)
+        this.playerTargets.delete(sessionId)
       }
     }
+  }
 
-    // Listen for synchronized player updates.
-    this.room.onStateChange(syncPlayers)
-
+  // Set up chat and emoji message listeners.
+  private setupMessageHandlers() {
     // Listen for chat messages received from other players.
     this.room.onMessage('chat', (message: ChatMessage) => {
       // Find the character belonging to the player who sent the message.
@@ -469,7 +453,6 @@ export default class TownScene extends Phaser.Scene {
       if (character) {
         this.showChatBubble(message.sessionId, character, message.text)
       }
-      console.log('Received chat message:', message)
     })
 
     // Listen for emoji messages received from other players.
@@ -485,17 +468,16 @@ export default class TownScene extends Phaser.Scene {
         this.showEmojiBubble(message.sessionId, character, message.emoji)
       }
     })
+  }
 
-    // Synchronize the initial room state.
-    syncPlayers()
-
-    // Point-and-click movement
+  // Set up point-and-click movement controls.
+  private setupMovementControls(movementHint: Phaser.GameObjects.Container) {
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      // Get pointer coordinates
+      // Get pointer coordinates.
       const x = Phaser.Math.Clamp(pointer.worldX, 25, 935)
       const y = Phaser.Math.Clamp(pointer.worldY, 170, 520)
 
-      // Calculate distance to destination
+      // Calculate distance to destination.
       const distance = Phaser.Math.Distance.Between(
         this.player.x,
         this.player.y,
@@ -559,5 +541,29 @@ export default class TownScene extends Phaser.Scene {
       // Send the movement request to the server.
       this.room.send('move', { x, y })
     })
+  }
+
+  // Automatically called when the scene starts.
+  create() {
+    // Create the town environment.
+    this.createTownEnvironment()
+
+    // Create the local player.
+    this.createLocalPlayer()
+
+    // Show a movement hint for new players.
+    const movementHint = this.createMovementHint()
+
+    // Listen for synchronized player updates.
+    this.room.onStateChange(() => this.syncPlayers())
+
+    // Synchronize the initial room state.
+    this.syncPlayers()
+
+    // Set up chat and emoji message listeners.
+    this.setupMessageHandlers()
+
+    // Point-and-click movement.
+    this.setupMovementControls(movementHint)
   }
 }
