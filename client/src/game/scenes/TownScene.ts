@@ -376,11 +376,16 @@ export default class TownScene extends Phaser.Scene {
 
     // Synchronize remote players with the Colyseus room.
     const syncPlayers = () => {
+      const players = this.room.state?.players
+
+      // Wait until the initial room state is available.
+      if (!players) return
+
       // Keep track of remote players currently in the room.
       const currentSessionIds = new Set<string>()
 
       // Iterate through all synchronized players.
-      this.room.state.players.forEach((player, sessionId) => {
+      players.forEach((player, sessionId) => {
         let character: Phaser.GameObjects.Container
 
         // Use the existing character for the local player.

@@ -5,7 +5,7 @@ type LeaveGameDialogProps = {
 
 function LeaveGameDialog({ onConfirm, onCancel }: LeaveGameDialogProps) {
   return (
-    <div className="game-dialog-overlay">
+    <div className="game-dialog-overlay leave-game-dialog-overlay">
       <div
         className="game-dialog leave-game-dialog"
         role="dialog"
