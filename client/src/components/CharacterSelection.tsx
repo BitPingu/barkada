@@ -1,5 +1,6 @@
 import type { CharacterType } from '../game/objects/PlayerCharacter'
 import CharacterPreview from '../game/CharacterPreview'
+import { useEffect, useRef } from 'react'
 
 type CharacterSelectionProps = {
   characterType: CharacterType | null
@@ -20,6 +21,20 @@ function CharacterSelection({
   joinError,
   onJoin,
 }: CharacterSelectionProps) {
+  // Reference the display-name input.
+  const nameInputRef = useRef<HTMLInputElement>(null)
+
+  // Clear any existing text selection when joining begins.
+  useEffect(() => {
+    if (isJoining) {
+      // Remove any selected text from the page.
+      window.getSelection()?.removeAllRanges()
+
+      // Remove focus from the display-name input.
+      nameInputRef.current?.blur()
+    }
+  }, [isJoining])
+
   return (
     <section className="character-selection">
       <h2>Welcome to barkada!</h2>
@@ -27,12 +42,14 @@ function CharacterSelection({
       <div className="display-name-field">
         <label htmlFor="display-name">What should we call you?</label>
         <input
+          ref={nameInputRef}
           id="display-name"
           type="text"
           value={displayName}
           onChange={(event) => setDisplayName(event.target.value)}
           placeholder="Enter a name"
           maxLength={16}
+          disabled={isJoining}
         />
       </div>
 
@@ -48,6 +65,7 @@ function CharacterSelection({
           }`}
           onClick={() => setCharacterType('boy')}
           aria-pressed={characterType === 'boy'}
+          disabled={isJoining}
         >
           <CharacterPreview characterType="boy" />
         </button>
@@ -58,6 +76,7 @@ function CharacterSelection({
           }`}
           onClick={() => setCharacterType('girl')}
           aria-pressed={characterType === 'girl'}
+          disabled={isJoining}
         >
           <CharacterPreview characterType="girl" />
         </button>

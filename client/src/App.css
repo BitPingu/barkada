@@ -578,6 +578,13 @@ body {
   color: #9aa8b6;
 }
 
+.display-name-field input:disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 .character-options {
   display: flex;
   justify-content: center;
@@ -619,10 +626,14 @@ body {
   pointer-events: none;
 }
 
-.character-option:hover {
+.character-option:not(:disabled):hover {
   transform: translateY(-1.5px);
   border-color: #3978c6;
   background: #eaf3ff;
+}
+
+.character-option:disabled {
+  cursor: not-allowed;
 }
 
 .character-option.selected {
