@@ -14,8 +14,7 @@ function LeaveGameDialog({ onConfirm, onCancel }: LeaveGameDialogProps) {
       >
         <h2 id="leave-game-title">Leave Game?</h2>
         <p>
-          Are you sure you want to leave this game? You'll return to character
-          selection.
+          Are you sure you want to leave? You'll return to character selection.
         </p>
 
         <div className="leave-game-actions">

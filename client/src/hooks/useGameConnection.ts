@@ -16,7 +16,7 @@ function useGameConnection() {
   // Tracks whether the client is attempting to reconnect.
   const [isReconnecting, setIsReconnecting] = useState(false)
 
-  // Stores an error if the connection cannot be restored.
+  // Stores the message displayed when a connection is lost or session recovery fails.
   const [connectionError, setConnectionError] = useState<string | null>(null)
 
   // Store an error message if joining the room fails.
@@ -70,9 +70,14 @@ function useGameConnection() {
       console.warn('Left room:', code, reason)
 
       roomRef.current = null
+
+      // Clear saved session data because this room can no longer be recovered.
+      sessionStorage.removeItem('barkada-reconnection-token')
+      sessionStorage.removeItem('barkada-character-type')
+
       setIsReconnecting(false)
       setConnectionError(
-        'Your previous session expired. Please rejoin the game.',
+        'Your session has ended. Please return to character selection.',
       )
     })
 
@@ -107,6 +112,7 @@ function useGameConnection() {
       sessionStorage.setItem('barkada-character-type', characterType)
 
       setupRoomConnection(connection)
+      setIsJoining(false)
     } catch (error) {
       // Display an error message if joining fails.
       console.error('Failed to join room:', error)
@@ -123,12 +129,12 @@ function useGameConnection() {
     }
   }
 
-  // Leave the room when the application unmounts.
+  // Clean up the active room connection when the application unmounts.
   useEffect(() => {
     return () => {
-      room?.leave()
+      roomRef.current?.leave()
     }
-  }, [room])
+  }, [])
 
   // Restore an existing session after a page refresh or when returning to the tab.
   useEffect(() => {
@@ -175,9 +181,7 @@ function useGameConnection() {
         sessionStorage.removeItem('barkada-reconnection-token')
         sessionStorage.removeItem('barkada-character-type')
 
-        setConnectionError(
-          'Your previous session expired. Please select a character to rejoin.',
-        )
+        setConnectionError('Your previous session expired.')
 
         setIsJoining(false)
       } finally {
@@ -234,13 +238,23 @@ function useGameConnection() {
     }
   }, [room])
 
-  // Return to character selection.
+  // Leave the current room and reset the connection state.
   function returnToCharacterSelection() {
+    const connection = roomRef.current
     roomRef.current = null
+
+    // Clear any saved reconnection data.
+    sessionStorage.removeItem('barkada-reconnection-token')
+    sessionStorage.removeItem('barkada-character-type')
+
     setRoom(null)
     setIsJoining(false)
     setIsReconnecting(false)
     setConnectionError(null)
+
+    if (connection) {
+      void connection.leave()
+    }
   }
 
   // Intentionally leave the game and return to character selection.

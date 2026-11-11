@@ -4,6 +4,7 @@ import CharacterSelection from './components/CharacterSelection'
 import ConnectionOverlay from './components/ConnectionOverlay'
 import ChatBar from './components/ChatBar'
 import LeaveGameDialog from './components/LeaveGameDialog'
+import SessionExpiredDialog from './components/SessionExpiredDialog'
 import useGameConnection from './hooks/useGameConnection'
 import './App.css'
 
@@ -67,14 +68,22 @@ function App() {
       )}
 
       {!room ? (
-        // Character selection screen.
-        <CharacterSelection
-          characterType={characterType}
-          setCharacterType={setCharacterType}
-          isJoining={isJoining}
-          joinError={joinError}
-          onJoin={joinGame}
-        />
+        <>
+          <CharacterSelection
+            characterType={characterType}
+            setCharacterType={setCharacterType}
+            isJoining={isJoining}
+            joinError={joinError}
+            onJoin={joinGame}
+          />
+
+          {connectionError && (
+            <SessionExpiredDialog
+              message={connectionError}
+              onContinue={returnToCharacterSelection}
+            />
+          )}
+        </>
       ) : (
         // Game interface.
         <div className="game-interface">

@@ -408,6 +408,10 @@ body {
   transform: translateY(-40px);
 }
 
+.session-expired-dialog-overlay {
+  border-radius: 0;
+}
+
 /* Connection dialog */
 .connection-dialog {
   display: flex;
