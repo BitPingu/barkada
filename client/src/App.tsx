@@ -77,44 +77,46 @@ function App() {
         />
       ) : (
         // Game interface.
-        <>
+        <div className="game-interface">
           {/* Canvas */}
-          <div
-            className="game-container"
-            onPointerDown={(event) => {
-              if (
-                event.target instanceof HTMLCanvasElement &&
-                document.activeElement instanceof HTMLElement
-              ) {
-                document.activeElement.blur()
-              }
-            }}
-          >
-            {/* Load the game separately from the app bundle
-              after the room connection is established. */}
-            <Suspense
-              fallback={
-                <div className="loading-screen">
-                  <div className="loading-spinner" />
-                  <p>Loading {roomName || 'Room'}...</p>
-                </div>
-              }
+          <div className="canvas-wrapper">
+            <div
+              className="game-container"
+              onPointerDown={(event) => {
+                if (
+                  event.target instanceof HTMLCanvasElement &&
+                  document.activeElement instanceof HTMLElement
+                ) {
+                  document.activeElement.blur()
+                }
+              }}
             >
-              <Game room={room} characterType={characterType!} />
-            </Suspense>
-
-            {/* Display connection status and recovery options. */}
-            <ConnectionOverlay
-              isReconnecting={isReconnecting}
-              connectionError={connectionError}
-              roomName={roomName}
-              onReturn={returnToCharacterSelection}
-            />
+              {/* Load the game separately from the app bundle
+                after the room connection is established. */}
+              <Suspense
+                fallback={
+                  <div className="loading-screen">
+                    <div className="loading-spinner" />
+                    <p>Loading {roomName || 'Room'}...</p>
+                  </div>
+                }
+              >
+                <Game room={room} characterType={characterType!} />
+              </Suspense>
+            </div>
           </div>
 
           {/* Chat Bar */}
           <ChatBar room={room} isDisabled={isDialogueOpen} />
-        </>
+
+          {/* Display connection status and recovery options. */}
+          <ConnectionOverlay
+            isReconnecting={isReconnecting}
+            connectionError={connectionError}
+            roomName={roomName}
+            onReturn={returnToCharacterSelection}
+          />
+        </div>
       )}
     </main>
   )
