@@ -273,22 +273,43 @@ export default class TownScene extends Phaser.Scene {
   // Create the town environment.
   private createTownEnvironment() {
     // Sky background.
-    this.add.rectangle(480, 270, 960, 540, 0x9bd8f5)
+    const sky = this.add.rectangle(480, 270, 960, 540, 0x9bd8f5)
+    sky.setDepth(0)
+
+    // Clouds.
+    const clouds = this.add.graphics()
+
+    clouds.fillStyle(0xffffff, 0.8)
+
+    // Left cloud.
+    clouds.fillEllipse(310, 65, 55, 24)
+    clouds.fillEllipse(325, 57, 38, 30)
+    clouds.fillEllipse(340, 66, 45, 22)
+
+    // Right cloud.
+    clouds.fillEllipse(620, 65, 55, 24)
+    clouds.fillEllipse(635, 57, 38, 30)
+    clouds.fillEllipse(650, 66, 45, 22)
+
+    clouds.setDepth(1)
 
     // Grassy ground.
-    this.add.rectangle(480, 350, 960, 380, 0x78bd62)
+    const ground = this.add.rectangle(480, 350, 960, 380, 0x78bd62)
+    ground.setDepth(2)
 
     // Grass variation.
     const grass = this.add.graphics()
 
-    grass.fillStyle(0x6eae59, 0.5)
+    grass.fillStyle(0x6eae59, 0.25)
     grass.fillEllipse(120, 220, 180, 70)
     grass.fillEllipse(820, 250, 220, 90)
     grass.fillEllipse(500, 480, 500, 100)
 
-    grass.fillStyle(0x91cc72, 0.5)
+    grass.fillStyle(0x91cc72, 0.3)
     grass.fillEllipse(300, 200, 160, 60)
     grass.fillEllipse(700, 420, 240, 70)
+
+    grass.setDepth(2)
 
     // Walking path.
     const path = this.add.graphics()
@@ -298,6 +319,8 @@ export default class TownScene extends Phaser.Scene {
 
     path.fillStyle(0xe8d6ae, 0.7)
     path.fillEllipse(480, 340, 620, 125)
+
+    path.setDepth(3)
 
     // Buildings.
     const buildings = this.add.graphics()
@@ -309,6 +332,17 @@ export default class TownScene extends Phaser.Scene {
     buildings.fillStyle(0xb85c45)
     buildings.fillTriangle(90, 55, 180, -5, 270, 55)
 
+    // Left building details.
+
+    // Door.
+    buildings.fillStyle(0x9b634b)
+    buildings.fillRect(158, 105, 45, 70)
+
+    // Windows.
+    buildings.fillStyle(0xb9e4ed)
+    buildings.fillRect(110, 80, 35, 30)
+    buildings.fillRect(215, 80, 35, 30)
+
     // Middle building.
     buildings.fillStyle(0xf0d18a)
     buildings.fillRect(380, 25, 200, 150)
@@ -316,12 +350,36 @@ export default class TownScene extends Phaser.Scene {
     buildings.fillStyle(0x9b634b)
     buildings.fillTriangle(380, 25, 480, -50, 580, 25)
 
+    // Middle building details.
+
+    // Door.
+    buildings.fillStyle(0x9b634b)
+    buildings.fillRect(455, 105, 50, 70)
+
+    // Windows.
+    buildings.fillStyle(0xb9e4ed)
+    buildings.fillRect(400, 65, 40, 35)
+    buildings.fillRect(520, 65, 40, 35)
+
     // Right building.
     buildings.fillStyle(0xb5d99b)
     buildings.fillRect(700, 55, 180, 120)
 
     buildings.fillStyle(0x658b58)
     buildings.fillTriangle(700, 55, 790, -5, 880, 55)
+
+    // Right building details.
+
+    // Door.
+    buildings.fillStyle(0x658b58)
+    buildings.fillRect(768, 105, 45, 70)
+
+    // Windows.
+    buildings.fillStyle(0xb9e4ed)
+    buildings.fillRect(720, 80, 35, 30)
+    buildings.fillRect(825, 80, 35, 30)
+
+    buildings.setDepth(4)
   }
 
   // Create the local player character.
