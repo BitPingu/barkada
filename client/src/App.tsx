@@ -69,71 +69,92 @@ function App() {
         />
       )}
 
-      {!room ? (
-        <>
-          <CharacterSelection
-            characterType={characterType}
-            setCharacterType={setCharacterType}
-            displayName={displayName}
-            setDisplayName={setDisplayName}
-            isJoining={isJoining}
-            joinError={joinError}
-            onJoin={joinGame}
-          />
-
-          {connectionError && (
-            <SessionExpiredDialog
-              message={connectionError}
-              onContinue={returnToCharacterSelection}
-            />
-          )}
-        </>
-      ) : (
-        // Game interface.
-        <div className="game-interface">
-          {/* Canvas */}
-          <div className="canvas-wrapper">
-            <div
-              className="game-container"
-              onPointerDown={(event) => {
-                if (
-                  event.target instanceof HTMLCanvasElement &&
-                  document.activeElement instanceof HTMLElement
-                ) {
-                  document.activeElement.blur()
-                }
-              }}
-            >
-              {/* Load the game separately from the app bundle
-                after the room connection is established. */}
-              <Suspense
-                fallback={
-                  <div className="loading-screen">
-                    <div className="loading-spinner" />
-                    <p>Loading {roomName || 'Room'}...</p>
-                  </div>
-                }
+      {/* Shared game interface for character selection and gameplay. */}
+      <div className="game-interface">
+        {/* Main content area. */}
+        <div className="interface-main">
+          {room ? (
+            // Display the game canvas after joining a room.
+            <div className="canvas-wrapper">
+              <div
+                className="game-container"
+                onPointerDown={(event) => {
+                  // Remove focus from the chat input when the game canvas is clicked.
+                  if (
+                    event.target instanceof HTMLCanvasElement &&
+                    document.activeElement instanceof HTMLElement
+                  ) {
+                    document.activeElement.blur()
+                  }
+                }}
               >
-                <Game
-                  room={room}
-                  characterType={characterType!}
-                  displayName={displayName}
-                />
-              </Suspense>
+                {/* Load the game separately from the app bundle
+                  after the room connection is established. */}
+                <Suspense
+                  fallback={
+                    <div className="loading-screen">
+                      <div className="loading-spinner" />
+                      <p>Loading {roomName || 'Room'}...</p>
+                    </div>
+                  }
+                >
+                  <Game
+                    room={room}
+                    characterType={characterType!}
+                    displayName={displayName}
+                  />
+                </Suspense>
+              </div>
             </div>
+          ) : (
+            // Reserve the main area dimensions during character selection.
+            <div className="interface-main-placeholder" />
+          )}
+        </div>
+
+        {/* Bottom toolbar area. */}
+        <div className="interface-footer">
+          {room ? (
+            <ChatBar room={room} isDisabled={isDialogueOpen} />
+          ) : (
+            // Reserve space for the chat toolbar during character selection.
+            <div className="interface-footer-placeholder" />
+          )}
+        </div>
+
+        {/* Display character selection over the entire interface,
+          including the reserved footer space. */}
+        {!room && (
+          <div className="character-selection-overlay">
+            <CharacterSelection
+              characterType={characterType}
+              setCharacterType={setCharacterType}
+              displayName={displayName}
+              setDisplayName={setDisplayName}
+              isJoining={isJoining}
+              joinError={joinError}
+              onJoin={joinGame}
+            />
           </div>
+        )}
 
-          {/* Chat Bar */}
-          <ChatBar room={room} isDisabled={isDialogueOpen} />
-
-          {/* Display connection status and recovery options. */}
+        {/* Display connection status and recovery options during gameplay. */}
+        {room && (
           <ConnectionOverlay
             isReconnecting={isReconnecting}
             connectionError={connectionError}
             roomName={roomName}
             onReturn={returnToCharacterSelection}
           />
-        </div>
+        )}
+      </div>
+
+      {/* Display the session-expired dialog during reconnection recovery. */}
+      {!room && connectionError && (
+        <SessionExpiredDialog
+          message={connectionError}
+          onContinue={returnToCharacterSelection}
+        />
       )}
     </main>
   )

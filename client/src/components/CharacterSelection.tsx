@@ -1,6 +1,7 @@
+import './CharacterSelection.css'
 import type { CharacterType } from '../game/objects/PlayerCharacter'
 import CharacterPreview from '../game/CharacterPreview'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 type CharacterSelectionProps = {
   characterType: CharacterType | null
@@ -21,6 +22,34 @@ function CharacterSelection({
   joinError,
   onJoin,
 }: CharacterSelectionProps) {
+  // Reference the available character-selection viewport.
+  const selectionViewportRef = useRef<HTMLElement>(null)
+
+  // Scale the 960 × 540 reference layout to fit the available space.
+  const [scale, setScale] = useState(1)
+
+  // Recalculate the scale whenever the available viewport changes.
+  useEffect(() => {
+    const viewport = selectionViewportRef.current
+
+    if (!viewport) return
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0]
+
+      if (!entry) return
+
+      const { width, height } = entry.contentRect
+      const nextScale = Math.min(width / 960, height / 540)
+
+      setScale(nextScale)
+    })
+
+    observer.observe(viewport)
+
+    return () => observer.disconnect()
+  }, [])
+
   // Reference the display-name input.
   const nameInputRef = useRef<HTMLInputElement>(null)
 
@@ -36,62 +65,93 @@ function CharacterSelection({
   }, [isJoining])
 
   return (
-    <section className="character-selection">
-      <h2>Welcome to barkada!</h2>
-
-      <div className="display-name-field">
-        <label htmlFor="display-name">What should we call you?</label>
-        <input
-          ref={nameInputRef}
-          id="display-name"
-          type="text"
-          value={displayName}
-          onChange={(event) => setDisplayName(event.target.value)}
-          placeholder="Enter a name"
-          maxLength={16}
-          disabled={isJoining}
-        />
-      </div>
-
-      <p>Choose a character</p>
-
+    <section className="character-selection" ref={selectionViewportRef}>
       <div
-        className="character-options"
-        onContextMenu={(event) => event.preventDefault()}
+        className="character-selection-stage"
+        style={{
+          transform: `translate(-50%, -50%) scale(${scale})`,
+        }}
       >
-        <button
-          className={`character-option ${
-            characterType === 'boy' ? 'selected' : ''
-          }`}
-          onClick={() => setCharacterType('boy')}
-          aria-pressed={characterType === 'boy'}
-          disabled={isJoining}
-        >
-          <CharacterPreview characterType="boy" />
-        </button>
+        <div className="character-selection-group">
+          <div className="character-selection-content">
+            {/* Welcome heading */}
+            <h2>Welcome to barkada!</h2>
 
-        <button
-          className={`character-option ${
-            characterType === 'girl' ? 'selected' : ''
-          }`}
-          onClick={() => setCharacterType('girl')}
-          aria-pressed={characterType === 'girl'}
-          disabled={isJoining}
-        >
-          <CharacterPreview characterType="girl" />
-        </button>
+            {/* Character selection */}
+            <div className="character-selection-field">
+              <p>Choose a character</p>
+              <div
+                className="character-options"
+                role="group"
+                aria-label="Choose your character"
+                onContextMenu={(event) => event.preventDefault()}
+              >
+                <button
+                  type="button"
+                  className={`character-option ${
+                    characterType === 'boy' ? 'selected' : ''
+                  }`}
+                  onClick={() => setCharacterType('boy')}
+                  aria-label="Boy character"
+                  aria-pressed={characterType === 'boy'}
+                  disabled={isJoining}
+                >
+                  <CharacterPreview characterType="boy" />
+                </button>
+
+                <button
+                  type="button"
+                  className={`character-option ${
+                    characterType === 'girl' ? 'selected' : ''
+                  }`}
+                  onClick={() => setCharacterType('girl')}
+                  aria-label="Girl character"
+                  aria-pressed={characterType === 'girl'}
+                  disabled={isJoining}
+                >
+                  <CharacterPreview characterType="girl" />
+                </button>
+              </div>
+            </div>
+
+            {/* Display name field */}
+            <div className="display-name-field">
+              <label htmlFor="display-name">
+                Choose a name for your character
+              </label>
+              <input
+                ref={nameInputRef}
+                id="display-name"
+                type="text"
+                autoComplete="off"
+                value={displayName}
+                onChange={(event) => setDisplayName(event.target.value)}
+                placeholder="Enter a name"
+                maxLength={16}
+                disabled={isJoining}
+              />
+            </div>
+
+            {/* Join Game button */}
+            <button
+              type="button"
+              className="join-button"
+              onClick={onJoin}
+              disabled={!characterType || !displayName.trim() || isJoining}
+            >
+              {isJoining ? 'Joining...' : 'Join Game'}
+            </button>
+          </div>
+
+          {/* Display join errors independently of the main content. */}
+          <p
+            className={`join-error ${joinError ? 'visible' : ''}`}
+            role="alert"
+          >
+            {joinError || ''}
+          </p>
+        </div>
       </div>
-
-      <button
-        className="join-button"
-        onClick={onJoin}
-        disabled={!characterType || !displayName.trim() || isJoining}
-      >
-        {isJoining ? 'Joining...' : 'Join Game'}
-      </button>
-      <p className={`join-error ${joinError ? 'visible' : ''}`}>
-        {joinError || '\u00A0'}
-      </p>
     </section>
   )
 }
