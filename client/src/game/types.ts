@@ -20,6 +20,7 @@ export interface ChatMessage {
   sessionId: string
   name: string
   text: string
+  expiresAt: number
 }
 
 // Represents an emoji message received from the server.
@@ -27,4 +28,5 @@ export interface EmojiMessage {
   sessionId: string
   name: string
   emoji: string
+  expiresAt: number
 }

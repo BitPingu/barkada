@@ -86,11 +86,18 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
       // Update the player's last message timestamp.
       this.lastChatMessage.set(client.sessionId, now)
 
-      // Broadcast the message to all players in the room.
+      // Calculate when the chat bubble should expire.
+      const displayDuration = Math.min(
+        12000,
+        Math.max(4000, 3000 + text.length * 60),
+      )
+
+      // Broadcast the message with its expiration timestamp.
       this.broadcast('chat', {
         sessionId: client.sessionId,
         name: player.name,
         text,
+        expiresAt: now + displayDuration,
       })
     })
 
@@ -120,11 +127,12 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
       // Update the player's last message timestamp.
       this.lastChatMessage.set(client.sessionId, now)
 
-      // Broadcast the emoji to all players.
+      // Broadcast the emoji with its expiration timestamp.
       this.broadcast('emoji', {
         sessionId: client.sessionId,
         name: player.name,
         emoji: message.emoji,
+        expiresAt: now + 5000,
       })
     })
   }

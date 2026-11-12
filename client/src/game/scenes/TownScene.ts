@@ -58,6 +58,9 @@ export default class TownScene extends Phaser.Scene {
   // Tracks the active speech bubble for each player.
   private activeBubbles = new Map<string, Phaser.GameObjects.Container>()
 
+  // Tracks the expiration timestamp for each player's active bubble.
+  private bubbleExpirations = new Map<string, number>()
+
   // Stores the last synchronized destination for each player.
   private playerTargets = new Map<string, { x: number; y: number }>()
 
@@ -182,6 +185,7 @@ export default class TownScene extends Phaser.Scene {
     sessionId: string,
     character: Phaser.GameObjects.Container,
     message: string,
+    expiresAt: number,
   ) {
     // Create the chat message text.
     const text = this.add.text(0, 0, message, {
@@ -204,13 +208,6 @@ export default class TownScene extends Phaser.Scene {
     // Move taller chat bubbles higher above the character.
     const verticalOffset = -Math.max(0, height - 36) / 2
 
-    // Calculate display duration based on message length.
-    const displayDuration = Phaser.Math.Clamp(
-      3000 + message.length * 60,
-      4000,
-      12000,
-    )
-
     // Create and display the chat bubble.
     this.createBubble(
       sessionId,
@@ -218,7 +215,7 @@ export default class TownScene extends Phaser.Scene {
       text,
       width,
       height,
-      displayDuration,
+      expiresAt,
       verticalOffset,
     )
   }
@@ -228,6 +225,7 @@ export default class TownScene extends Phaser.Scene {
     sessionId: string,
     character: Phaser.GameObjects.Container,
     emoji: string,
+    expiresAt: number,
   ) {
     const textureKey = `fluent-emoji-${Array.from(emoji)
       .map((character) => character.codePointAt(0)?.toString(16))
@@ -250,7 +248,7 @@ export default class TownScene extends Phaser.Scene {
       emojiImage,
       size,
       size,
-      5000,
+      expiresAt,
       0,
       true,
     )
@@ -263,16 +261,12 @@ export default class TownScene extends Phaser.Scene {
     content: Phaser.GameObjects.GameObject,
     width: number,
     height: number,
-    displayDuration: number,
+    expiresAt: number,
     verticalOffset = 0,
     circular = false,
   ) {
     // Remove the player's previous bubble, if one exists.
-    const previousBubble = this.activeBubbles.get(sessionId)
-
-    if (previousBubble) {
-      previousBubble.destroy()
-    }
+    this.removeBubble(sessionId)
 
     // Create the bubble container.
     const bubble = this.add.container(0, -108 + verticalOffset)
@@ -338,15 +332,53 @@ export default class TownScene extends Phaser.Scene {
     // Track the player's active bubble.
     this.activeBubbles.set(sessionId, bubble)
 
-    // Remove the bubble after its display duration.
-    this.time.delayedCall(displayDuration, () => {
-      bubble.destroy()
+    // Store the bubble's expiration timestamp.
+    this.bubbleExpirations.set(sessionId, expiresAt)
 
-      // Only remove the entry if it still belongs to this bubble.
-      if (this.activeBubbles.get(sessionId) === bubble) {
-        this.activeBubbles.delete(sessionId)
-      }
+    // The scene update loop checks when this bubble expires.
+  }
+
+  // Checks whether a bubble has expired and fades it out if necessary.
+  private checkBubbleExpiration(
+    sessionId: string,
+    bubble: Phaser.GameObjects.Container,
+    expiresAt: number,
+  ) {
+    // Stop if this bubble has already been replaced or removed.
+    if (this.activeBubbles.get(sessionId) !== bubble) return
+
+    // Wait until the server expiration time has been reached.
+    if (Date.now() < expiresAt) return
+
+    // Stop checking this bubble's expiration.
+    this.bubbleExpirations.delete(sessionId)
+
+    // Fade out the expired bubble.
+    this.tweens.add({
+      targets: bubble,
+      alpha: 0,
+      duration: 500,
+      onComplete: () => {
+        bubble.destroy()
+
+        if (this.activeBubbles.get(sessionId) === bubble) {
+          this.activeBubbles.delete(sessionId)
+        }
+      },
     })
+  }
+
+  // Removes a player's active bubble and any running fade tween.
+  private removeBubble(sessionId: string) {
+    this.bubbleExpirations.delete(sessionId)
+
+    const bubble = this.activeBubbles.get(sessionId)
+
+    if (bubble) {
+      this.tweens.killTweensOf(bubble)
+      bubble.destroy()
+      this.activeBubbles.delete(sessionId)
+    }
   }
 
   // Create the town environment.
@@ -529,9 +561,29 @@ export default class TownScene extends Phaser.Scene {
     }
   }
 
+  // Check active bubbles against their server expiration timestamps.
+  update() {
+    for (const [sessionId, expiresAt] of this.bubbleExpirations) {
+      const bubble = this.activeBubbles.get(sessionId)
+
+      if (!bubble) continue
+
+      this.checkBubbleExpiration(sessionId, bubble, expiresAt)
+    }
+  }
+
   // Handle returning to the game after switching tabs or windows.
   private handleVisibilityChange = () => {
     if (document.visibilityState === 'visible') {
+      // Check active bubbles against their server expiration timestamps.
+      for (const [sessionId, expiresAt] of this.bubbleExpirations) {
+        const bubble = this.activeBubbles.get(sessionId)
+
+        if (!bubble) continue
+
+        this.checkBubbleExpiration(sessionId, bubble, expiresAt)
+      }
+
       this.syncPlayers()
       this.syncPlayerPositions()
     }
@@ -625,6 +677,8 @@ export default class TownScene extends Phaser.Scene {
           this.onPlayerLeft(displayName)
         }
 
+        // Remove the player's active bubble before destroying their character.
+        this.removeBubble(sessionId)
         character.destroy()
         this.remotePlayers.delete(sessionId)
         this.remotePlayerNames.delete(sessionId)
@@ -648,7 +702,12 @@ export default class TownScene extends Phaser.Scene {
 
       // Display the message above the character if they exist.
       if (character) {
-        this.showChatBubble(message.sessionId, character, message.text)
+        this.showChatBubble(
+          message.sessionId,
+          character,
+          message.text,
+          message.expiresAt,
+        )
       }
     })
 
@@ -662,7 +721,12 @@ export default class TownScene extends Phaser.Scene {
 
       // Display the emoji above the character if they exist.
       if (character) {
-        this.showEmojiBubble(message.sessionId, character, message.emoji)
+        this.showEmojiBubble(
+          message.sessionId,
+          character,
+          message.emoji,
+          message.expiresAt,
+        )
       }
     })
   }
@@ -773,6 +837,7 @@ export default class TownScene extends Phaser.Scene {
 
     // Synchronize player positions when returning to the game.
     document.addEventListener('visibilitychange', this.handleVisibilityChange)
+    window.addEventListener('focus', this.handleVisibilityChange)
 
     // Remove the listener when the scene shuts down.
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -780,6 +845,7 @@ export default class TownScene extends Phaser.Scene {
         'visibilitychange',
         this.handleVisibilityChange,
       )
+      window.removeEventListener('focus', this.handleVisibilityChange)
     })
   }
 }
