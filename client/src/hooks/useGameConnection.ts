@@ -94,7 +94,7 @@ function useGameConnection() {
       sessionStorage.removeItem('barkada-character-type')
 
       setIsReconnecting(false)
-      setConnectionError("Oops! You've lost your connection to the game.")
+      setConnectionError("You've lost your connection to the game.")
     })
 
     // Update the count whenever the room state changes.

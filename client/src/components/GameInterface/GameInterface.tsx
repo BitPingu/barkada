@@ -1,4 +1,4 @@
-import { lazy, Suspense, type ComponentProps } from 'react'
+import { lazy, Suspense, useEffect, type ComponentProps } from 'react'
 import CharacterSelection from '../CharacterSelection/CharacterSelection'
 import ConnectionOverlay from '../ConnectionOverlay'
 import ChatBar from '../ChatBar'
@@ -28,6 +28,7 @@ interface GameInterfaceProps {
   connectionError: ConnectionOverlayProps['connectionError']
   roomName: string | null
   onReturn: ConnectionOverlayProps['onReturn']
+  onScaleChange: (scale: number) => void
 }
 
 // Render the shared interface for character selection and gameplay.
@@ -44,10 +45,16 @@ function GameInterface({
   connectionError,
   roomName,
   onReturn,
+  onScaleChange,
 }: GameInterfaceProps) {
   // Scale the game interface to fit the available space.
   const { containerRef: gameInterfaceViewportRef, scale: gameInterfaceScale } =
     useScaledStage<HTMLDivElement>(1100, 686.125)
+
+  // Notify the parent whenever the game interface scale changes.
+  useEffect(() => {
+    onScaleChange(gameInterfaceScale)
+  }, [gameInterfaceScale, onScaleChange])
 
   // Disable toolbar interactions while a dialogue is open.
   const isDialogueOpen = isReconnecting || Boolean(connectionError)

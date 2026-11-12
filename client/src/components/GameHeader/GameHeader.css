@@ -116,6 +116,7 @@
 .status-dot {
   width: 8px;
   height: 8px;
+  flex: 0 0 auto;
   border-radius: 50%;
   background: #9ca3af;
 }
@@ -220,8 +221,8 @@
     grid-template-areas: 'brand connection room leave';
     align-items: center;
     column-gap: 5px;
-    width: 100%;
-    max-width: min(1100px, calc((100dvh - 100px) * 16 / 9));
+    width: min(var(--interface-width), 100%);
+    max-width: 100%;
     min-height: 28px;
     margin-inline: auto;
   }
@@ -266,7 +267,7 @@
   .room-info {
     grid-area: room;
     justify-self: stretch;
-    display: inline-flex;
+    display: flex;
     justify-content: flex-end;
     width: 100%;
     min-width: 0;

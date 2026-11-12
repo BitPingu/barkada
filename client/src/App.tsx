@@ -31,6 +31,9 @@ function App() {
   // Track whether the leave game confirmation dialog is open.
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false)
 
+  // Track the scale of the game interface for responsive header sizing.
+  const [interfaceScale, setInterfaceScale] = useState(1)
+
   // Open the leave game confirmation dialog.
   function handleLeaveGame() {
     setIsLeaveDialogOpen(true)
@@ -52,6 +55,7 @@ function App() {
         isDisconnected={isDisconnected}
         isServerOnline={isServerOnline}
         room={room}
+        interfaceScale={interfaceScale}
         onLeaveGame={handleLeaveGame}
       />
 
@@ -77,6 +81,7 @@ function App() {
         connectionError={connectionError}
         roomName={roomName}
         onReturn={returnToCharacterSelection}
+        onScaleChange={setInterfaceScale}
       />
 
       {/* Display the session-expired dialog during reconnection recovery. */}

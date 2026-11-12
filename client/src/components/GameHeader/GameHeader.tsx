@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import type { Room } from '@colyseus/sdk'
 import './GameHeader.css'
 
@@ -10,6 +11,7 @@ type GameHeaderProps = {
   isServerOnline: boolean | null
   room: Room | null
   onLeaveGame: () => void
+  interfaceScale: number
 }
 
 function GameHeader({
@@ -20,7 +22,9 @@ function GameHeader({
   isServerOnline,
   room,
   onLeaveGame,
+  interfaceScale,
 }: GameHeaderProps) {
+  // Determine the displayed connection status based on connection state.
   const connectionStatus = isReconnecting
     ? 'reconnecting'
     : isServerOnline === false
@@ -43,7 +47,15 @@ function GameHeader({
   }[connectionStatus]
 
   return (
-    <header className="game-header">
+    // Match the header width to the scaled game interface.
+    <header
+      className="game-header"
+      style={
+        {
+          '--interface-width': `${1100 * interfaceScale}px`,
+        } as CSSProperties
+      }
+    >
       <div className="header-top-row">
         <div className="brand">
           <div className="brand-mark">b</div>

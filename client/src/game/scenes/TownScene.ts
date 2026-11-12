@@ -347,14 +347,14 @@ export default class TownScene extends Phaser.Scene {
 
     // Soft white background with a subtle blue border.
     hintBackground.fillStyle(0xffffff, 0.94)
-    hintBackground.lineStyle(1, 0x9bbce0, 1)
+    hintBackground.lineStyle(1.5, 0x4aabda, 1)
     hintBackground.fillRoundedRect(-120, -24, 240, 48, 12)
     hintBackground.strokeRoundedRect(-120, -24, 240, 48, 12)
 
     const hintText = this.add.text(0, 0, 'Click anywhere to move!', {
       fontSize: '15px',
       fontStyle: 'bold',
-      color: '#526477',
+      color: '#4AABDA',
       fontFamily: 'Arial',
       resolution: 3,
     })
