@@ -1,7 +1,8 @@
+// Define the props required by the connection overlay.
 type ConnectionOverlayProps = {
   isReconnecting: boolean
   connectionError: string | null
-  roomName: string
+  roomName: string | null
   onReturn: () => void
 }
 
@@ -11,6 +12,7 @@ function ConnectionOverlay({
   roomName,
   onReturn,
 }: ConnectionOverlayProps) {
+  // Hide the overlay when there is no active connection issue.
   if (!isReconnecting && !connectionError) return null
 
   return (
@@ -18,15 +20,14 @@ function ConnectionOverlay({
       <div className="game-dialog connection-dialog">
         {isReconnecting ? (
           <>
+            {/* Display a loading indicator while attempting to reconnect. */}
             <div className="loading-spinner" aria-hidden="true" />
             <h2>Reconnecting...</h2>
-            <p>
-              Restoring your connection to {roomName || 'Room'}. Please wait a
-              moment.
-            </p>
+            <p>Hang tight! We're getting you back into the game.</p>
           </>
         ) : (
           <>
+            {/* Display an error message when the connection cannot be restored. */}
             <div className="connection-lost-icon" aria-hidden="true">
               !
             </div>

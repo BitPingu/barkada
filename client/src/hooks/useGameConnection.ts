@@ -21,17 +21,23 @@ function useGameConnection() {
   // Tracks whether the client is attempting to reconnect.
   const [isReconnecting, setIsReconnecting] = useState(false)
 
-  // Stores the message displayed when a connection is lost or session recovery fails.
+  // Tracks whether the player is disconnected from the room.
+  const [isDisconnected, setIsDisconnected] = useState(false)
+
+  // Tracks whether the server is reachable.
+  const [isServerOnline, setIsServerOnline] = useState<boolean | null>(null)
+
+  // Stores the message displayed when a room session ends or expires.
   const [connectionError, setConnectionError] = useState<string | null>(null)
 
   // Store an error message if joining the room fails.
   const [joinError, setJoinError] = useState<string | null>(null)
 
   // Store the player count.
-  const [playerCount, setPlayerCount] = useState(0)
+  const [playerCount, setPlayerCount] = useState<number | null>(null)
 
   // Stores the room's display name.
-  const [roomName, setRoomName] = useState('')
+  const [roomName, setRoomName] = useState<string | null>(null)
 
   // Reuse an in-progress session recovery request.
   const recoveryPromiseRef = useRef<Promise<Room> | null>(null)
@@ -50,6 +56,7 @@ function useGameConnection() {
       if (roomRef.current !== connection) return
 
       console.warn('Connection dropped:', code, reason)
+      setIsDisconnected(true)
       setIsReconnecting(true)
       setConnectionError(null)
     })
@@ -58,6 +65,7 @@ function useGameConnection() {
       // Ignore events from connections that are no longer active.
       if (roomRef.current !== connection) return
 
+      setIsDisconnected(false)
       setIsReconnecting(false)
       setConnectionError(null)
 
@@ -78,15 +86,15 @@ function useGameConnection() {
       console.warn('Left room:', code, reason)
 
       roomRef.current = null
+      setRoom(null)
+      setIsDisconnected(true)
 
       // Clear saved session data because this room can no longer be recovered.
       sessionStorage.removeItem('barkada-reconnection-token')
       sessionStorage.removeItem('barkada-character-type')
 
       setIsReconnecting(false)
-      setConnectionError(
-        'Your session has ended. Please return to character selection.',
-      )
+      setConnectionError("Oops! You've lost your connection to the game.")
     })
 
     // Update the count whenever the room state changes.
@@ -121,6 +129,10 @@ function useGameConnection() {
         displayName: trimmedDisplayName,
       })
 
+      setIsDisconnected(false)
+      setIsReconnecting(false)
+      setConnectionError(null)
+
       // Save the session details to support reconnection after a refresh.
       sessionStorage.setItem(
         'barkada-reconnection-token',
@@ -134,8 +146,6 @@ function useGameConnection() {
       setIsJoining(false)
     } catch (error) {
       // Display an error message if joining fails.
-      console.error('Failed to join room:', error)
-
       const errorCode = (error as { code?: number }).code
 
       // Handle a full room separately from other connection errors.
@@ -152,7 +162,14 @@ function useGameConnection() {
   // Clean up the active room connection when the application unmounts.
   useEffect(() => {
     return () => {
-      roomRef.current?.leave()
+      const connection = roomRef.current
+
+      // Clear the room reference to prevent further connection callbacks.
+      roomRef.current = null
+
+      if (connection) {
+        void connection.leave()
+      }
     }
   }, [])
 
@@ -171,10 +188,20 @@ function useGameConnection() {
       )
 
       // Skip recovery if no saved session exists.
-      if (!token || !savedCharacterType) return
+      if (!token && !savedCharacterType) return
+
+      // Clear incomplete session data.
+      if (!token || !savedCharacterType) {
+        sessionStorage.removeItem('barkada-reconnection-token')
+        sessionStorage.removeItem('barkada-character-type')
+
+        setConnectionError('Your previous session expired.')
+        return
+      }
 
       isRecovering = true
       setIsJoining(true)
+      setIsReconnecting(true)
       setCharacterType(savedCharacterType as CharacterType)
 
       try {
@@ -190,6 +217,10 @@ function useGameConnection() {
 
         setupRoomConnection(connection)
 
+        setIsDisconnected(false)
+        setIsReconnecting(false)
+        setConnectionError(null)
+
         // Save the refreshed reconnection token.
         sessionStorage.setItem(
           'barkada-reconnection-token',
@@ -200,14 +231,28 @@ function useGameConnection() {
       } catch (error) {
         if (!isActive) return
 
-        console.error('Failed to recover session:', error)
+        console.warn('Session recovery failed:', {
+          code: (error as { code?: number }).code,
+          message: error instanceof Error ? error.message : error,
+        })
 
-        // Clear invalid session data so the player can join a new room.
-        sessionStorage.removeItem('barkada-reconnection-token')
-        sessionStorage.removeItem('barkada-character-type')
+        const errorCode = (error as { code?: number }).code
+        const errorMessage =
+          error instanceof Error ? error.message : String(error)
 
-        setConnectionError('Your previous session expired.')
+        const isInvalidTokenFormat = errorMessage.includes(
+          'Invalid reconnection token format',
+        )
 
+        if (errorCode === 524 || errorCode === 522 || isInvalidTokenFormat) {
+          // Clear invalid session data so the player can join a new room.
+          sessionStorage.removeItem('barkada-reconnection-token')
+          sessionStorage.removeItem('barkada-character-type')
+
+          setConnectionError('Your previous session expired.')
+        }
+
+        setIsReconnecting(false)
         setIsJoining(false)
       } finally {
         // Reset recovery state regardless of the outcome.
@@ -236,10 +281,8 @@ function useGameConnection() {
     }
   }, [setupRoomConnection])
 
-  // Fetch the Room player count while not connected.
+  // Check server availability and fetch room information.
   useEffect(() => {
-    if (room) return
-
     let isActive = true
 
     async function fetchPlayerCount() {
@@ -247,11 +290,23 @@ function useGameConnection() {
         const response = await client.http.get('/api/town-status')
 
         if (isActive) {
-          setRoomName(response.data.roomName)
-          setPlayerCount(response.data.playerCount)
+          setIsServerOnline(true)
+
+          // Only update room information when not connected to a room.
+          if (!roomRef.current) {
+            setRoomName(response.data.roomName)
+            setPlayerCount(response.data.playerCount)
+          }
         }
-      } catch (error) {
-        console.error('Failed to fetch player count:', error)
+      } catch {
+        if (isActive) {
+          setIsServerOnline(false)
+
+          // Preserve the room player count while connected.
+          if (!roomRef.current) {
+            setPlayerCount(null)
+          }
+        }
       }
     }
 
@@ -265,7 +320,7 @@ function useGameConnection() {
       isActive = false
       window.clearInterval(intervalId)
     }
-  }, [room])
+  }, [])
 
   // Leave the current room and reset the connection state.
   function returnToCharacterSelection() {
@@ -281,6 +336,7 @@ function useGameConnection() {
     setRoom(null)
     setIsJoining(false)
     setIsReconnecting(false)
+    setIsDisconnected(false)
     setConnectionError(null)
 
     if (connection) {
@@ -303,6 +359,7 @@ function useGameConnection() {
     setRoom(null)
     setIsJoining(false)
     setIsReconnecting(false)
+    setIsDisconnected(false)
     setConnectionError(null)
 
     // Leave the Colyseus room.
@@ -319,6 +376,8 @@ function useGameConnection() {
     setDisplayName,
     isJoining,
     isReconnecting,
+    isDisconnected,
+    isServerOnline,
     connectionError,
     joinError,
     playerCount,

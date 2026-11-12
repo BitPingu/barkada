@@ -70,7 +70,7 @@ export default class TownScene extends Phaser.Scene {
     const direction = x < character.x ? -1 : 1
 
     // Flip only the character graphics.
-    const body = character.getAt(1) as Phaser.GameObjects.Graphics
+    const body = character.getByName('body') as Phaser.GameObjects.Graphics
     body.setScale(direction, 1)
 
     // Stop any previous movement.
@@ -512,7 +512,9 @@ export default class TownScene extends Phaser.Scene {
       const direction = x < this.player.x ? -1 : 1
 
       // Flip only the character graphics.
-      const playerGraphics = this.player.getAt(1) as Phaser.GameObjects.Graphics
+      const playerGraphics = this.player.getByName(
+        'body',
+      ) as Phaser.GameObjects.Graphics
       playerGraphics.setScale(direction, 1)
 
       // Remove the previous destination marker.

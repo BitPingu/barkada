@@ -15,7 +15,7 @@ function SessionExpiredDialog({
         aria-modal="true"
         aria-labelledby="session-expired-title"
       >
-        <h2 id="session-expired-title">Session Expired</h2>
+        <h2 id="session-expired-title">Connection Lost</h2>
         <p>{message}</p>
 
         <div className="session-expired-actions">
@@ -24,7 +24,7 @@ function SessionExpiredDialog({
             type="button"
             onClick={onContinue}
           >
-            Continue
+            Okay
           </button>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import GameHeader from './components/GameHeader'
+import GameHeader from './components/GameHeader/GameHeader'
 import GameInterface from './components/GameInterface/GameInterface'
 import LeaveGameDialog from './components/LeaveGameDialog'
 import SessionExpiredDialog from './components/SessionExpiredDialog'
@@ -17,6 +17,8 @@ function App() {
     setDisplayName,
     isJoining,
     isReconnecting,
+    isDisconnected,
+    isServerOnline,
     connectionError,
     joinError,
     playerCount,
@@ -46,8 +48,9 @@ function App() {
       <GameHeader
         roomName={roomName}
         playerCount={playerCount}
-        connectionError={connectionError}
         isReconnecting={isReconnecting}
+        isDisconnected={isDisconnected}
+        isServerOnline={isServerOnline}
         room={room}
         onLeaveGame={handleLeaveGame}
       />

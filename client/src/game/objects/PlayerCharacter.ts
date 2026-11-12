@@ -26,7 +26,7 @@ export function createPlayerCharacter(
     playerIndicator.setFillStyle(0x000000, 0)
   }
 
-  const body = scene.add.graphics()
+  const body = scene.add.graphics().setName('body')
   const arms = scene.add.container(0, 0).setName('arms')
   const legs = scene.add.container(0, 0).setName('legs')
 

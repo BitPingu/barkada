@@ -1,0 +1,297 @@
+/* Header */
+.game-header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 0 0 auto;
+  width: min(1100px, 100%);
+}
+
+.header-top-row,
+.header-bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.brand-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  background: #3978c6;
+  color: #fff;
+  font-size: 27px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.brand h1 {
+  margin: 0;
+  color: #26384b;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.8px;
+}
+
+/* Leave Game button */
+.leave-game-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 11px;
+  border: 1px solid #d5dee8;
+  border-radius: 8px;
+  background: #fff;
+  color: #526477;
+  font: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.leave-game-button:hover {
+  background: #f0f5fb;
+}
+
+.leave-game-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.leave-game-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Connection status */
+.connection-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 20px;
+  background: rgba(156, 163, 175, 0.12);
+  color: #526477;
+  font-size: 13px;
+  font-weight: 500;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Status colors */
+.connection-status.online,
+.connection-status.connected {
+  background: rgba(74, 222, 128, 0.12);
+  color: #258653;
+}
+
+.connection-status.checking,
+.connection-status.reconnecting {
+  background: rgba(240, 164, 58, 0.12);
+  color: #b7791f;
+}
+
+.connection-status.disconnected,
+.connection-status.offline {
+  background: rgba(214, 69, 69, 0.12);
+  color: #d64545;
+}
+
+/* Status indicator */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #9ca3af;
+}
+
+.status-dot.online,
+.status-dot.connected {
+  background: #35a66b;
+}
+
+.status-dot.checking,
+.status-dot.reconnecting {
+  background: #f0a43a;
+}
+
+.status-dot.disconnected,
+.status-dot.offline {
+  background: #d64545;
+}
+
+/* Room info */
+.room-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  min-width: 0;
+  color: #405469;
+  font-size: 13px;
+  white-space: nowrap;
+  padding-right: 4px;
+  overflow: hidden;
+}
+
+.room-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: #26384b;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.room-player-count {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-weight: 500;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.room-player-count::before {
+  content: '·';
+  margin-right: 6px;
+}
+
+/* Mobile layout */
+@media (max-width: 600px) {
+  .brand-mark {
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+  }
+
+  .brand h1 {
+    font-size: 22px;
+  }
+
+  .connection-status {
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+
+  .leave-game-label {
+    display: none;
+  }
+
+  .leave-game-button {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+  }
+
+  .room-info {
+    gap: 5px;
+    font-size: 11px;
+  }
+}
+
+/* Mobile landscape */
+@media (orientation: landscape) and (max-height: 600px) {
+  /* Single-row landscape header */
+  .game-header {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    grid-template-areas: 'brand connection room leave';
+    align-items: center;
+    column-gap: 5px;
+    width: 100%;
+    max-width: min(1100px, calc((100dvh - 100px) * 16 / 9));
+    min-height: 28px;
+    margin-inline: auto;
+  }
+
+  .header-top-row,
+  .header-bottom-row {
+    display: contents;
+  }
+
+  .brand {
+    grid-area: brand;
+    gap: 5px;
+    flex-shrink: 0;
+    margin-right: 4px;
+    transform: translateY(2px);
+  }
+
+  .brand-mark {
+    width: 22px;
+    height: 22px;
+    font-size: 14px;
+    border-radius: 6px;
+  }
+
+  .brand h1 {
+    font-size: 14px;
+  }
+
+  .connection-status {
+    grid-area: connection;
+    gap: 5px;
+    padding: 3px 6px;
+    font-size: 9px;
+    white-space: nowrap;
+  }
+
+  .status-dot {
+    width: 5px;
+    height: 5px;
+  }
+
+  .room-info {
+    grid-area: room;
+    justify-self: stretch;
+    display: inline-flex;
+    justify-content: flex-end;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    font-size: 10px;
+  }
+
+  .room-player-count {
+    font-size: 10px;
+  }
+
+  .connection-status,
+  .room-info {
+    transform: translateY(2px);
+  }
+
+  .leave-game-button {
+    grid-area: leave;
+    justify-self: end;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+  }
+
+  .leave-game-label {
+    display: none;
+  }
+}

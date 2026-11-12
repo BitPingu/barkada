@@ -26,7 +26,7 @@ interface GameInterfaceProps {
   onJoin: CharacterSelectionProps['onJoin']
   isReconnecting: ConnectionOverlayProps['isReconnecting']
   connectionError: ConnectionOverlayProps['connectionError']
-  roomName: ConnectionOverlayProps['roomName']
+  roomName: ConnectionOverlayProps['roomName'] | null
   onReturn: ConnectionOverlayProps['onReturn']
 }
 
