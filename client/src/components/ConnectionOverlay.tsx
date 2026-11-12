@@ -2,14 +2,12 @@
 type ConnectionOverlayProps = {
   isReconnecting: boolean
   connectionError: string | null
-  roomName: string | null
   onReturn: () => void
 }
 
 function ConnectionOverlay({
   isReconnecting,
   connectionError,
-  roomName,
   onReturn,
 }: ConnectionOverlayProps) {
   // Hide the overlay when there is no active connection issue.
