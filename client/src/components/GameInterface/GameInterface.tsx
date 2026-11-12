@@ -1,4 +1,11 @@
-import { lazy, Suspense, useEffect, type ComponentProps } from 'react'
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useState,
+  type ComponentProps,
+} from 'react'
 import CharacterSelection from '../CharacterSelection/CharacterSelection'
 import ConnectionOverlay from '../ConnectionOverlay'
 import ChatBar from '../ChatBar'
@@ -47,6 +54,17 @@ function GameInterface({
   onReturn,
   onScaleChange,
 }: GameInterfaceProps) {
+  // Track which room has finished initializing.
+  const [readyRoom, setReadyRoom] = useState<GameInterfaceProps['room']>(null)
+
+  // Check whether the current room has finished initializing.
+  const isGameReady = room !== null && readyRoom === room
+
+  // Notify the interface when the game has finished initializing.
+  const handleGameReady = useCallback(() => {
+    setReadyRoom(room)
+  }, [room])
+
   // Scale the game interface to fit the available space.
   const { containerRef: gameInterfaceViewportRef, scale: gameInterfaceScale } =
     useScaledStage<HTMLDivElement>(1100, 686.125)
@@ -69,6 +87,14 @@ function GameInterface({
           transform: `translateX(-50%) scale(${gameInterfaceScale})`,
         }}
       >
+        {/* Cover the entire interface while the game initializes. */}
+        {room && !isGameReady && (
+          <div className="loading-screen">
+            <div className="loading-spinner" />
+            <p>Loading {roomName || 'Room'}...</p>
+          </div>
+        )}
+
         {/* Main content area. */}
         <div className="interface-main">
           {room ? (
@@ -88,18 +114,12 @@ function GameInterface({
               >
                 {/* Load the game separately from the app bundle
                   after the room connection is established. */}
-                <Suspense
-                  fallback={
-                    <div className="loading-screen">
-                      <div className="loading-spinner" />
-                      <p>Loading {roomName || 'Room'}...</p>
-                    </div>
-                  }
-                >
+                <Suspense fallback={null}>
                   <Game
                     room={room}
                     characterType={characterType!}
                     displayName={displayName}
+                    onReady={handleGameReady}
                   />
                 </Suspense>
               </div>

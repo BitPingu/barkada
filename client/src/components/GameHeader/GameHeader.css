@@ -68,11 +68,6 @@
   background: #f0f5fb;
 }
 
-.leave-game-icon {
-  font-size: 16px;
-  line-height: 1;
-}
-
 .leave-game-label {
   font-size: 14px;
   font-weight: 500;
@@ -140,7 +135,7 @@
 .room-info {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   width: auto;
   min-width: 0;
   color: #405469;
@@ -170,13 +165,16 @@
   border-radius: 0;
   background: transparent;
   font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   user-select: none;
   -webkit-user-select: none;
 }
 
 .room-player-count::before {
   content: '·';
-  margin-right: 6px;
+  margin-right: 0;
 }
 
 /* Mobile layout */

@@ -6,6 +6,22 @@ import {
   startWalkingAnimation,
 } from '../objects/PlayerCharacter'
 import type { CharacterType } from '../objects/PlayerCharacter'
+import { getFluentEmojiCDN } from '@lobehub/fluent-emoji'
+
+const EMOJI_BUBBLE_ASSETS = [
+  '😀',
+  '😂',
+  '😭',
+  '😮',
+  '😡',
+  '🥺',
+  '❤️',
+  '🔥',
+  '🎶',
+  '👍',
+  '👋',
+  '🙏',
+]
 
 // Creates and manages the town environment.
 export default class TownScene extends Phaser.Scene {
@@ -21,8 +37,23 @@ export default class TownScene extends Phaser.Scene {
   // Stores the player's display name.
   private displayName!: string
 
+  // Handles notifications when another player joins the room.
+  private onPlayerJoined!: (displayName: string) => void
+
+  // Handles notifications when another player leaves the room.
+  private onPlayerLeft!: (displayName: string) => void
+
+  // Handles the player's first movement click.
+  private onFirstMovement!: () => void
+
+  // Tracks whether the initial player synchronization has completed.
+  private hasSyncedPlayers = false
+
   // Stores characters belonging to other players.
   private remotePlayers = new Map<string, Phaser.GameObjects.Container>()
+
+  // Stores the display names of remote players.
+  private remotePlayerNames = new Map<string, string>()
 
   // Tracks the active speech bubble for each player.
   private activeBubbles = new Map<string, Phaser.GameObjects.Container>()
@@ -43,11 +74,17 @@ export default class TownScene extends Phaser.Scene {
     room: Room<MyRoomState>
     characterType: CharacterType
     displayName: string
+    onPlayerJoined: (displayName: string) => void
+    onPlayerLeft: (displayName: string) => void
+    onFirstMovement: () => void
   }) {
     // Store the room connection, selected character type, and display name.
     this.room = data.room
     this.characterType = data.characterType
     this.displayName = data.displayName
+    this.onPlayerJoined = data.onPlayerJoined
+    this.onPlayerLeft = data.onPlayerLeft
+    this.onFirstMovement = data.onFirstMovement
   }
 
   // Animates a character toward a synchronized position.
@@ -192,33 +229,43 @@ export default class TownScene extends Phaser.Scene {
     character: Phaser.GameObjects.Container,
     emoji: string,
   ) {
-    // Create the emoji text.
-    const emojiText = this.add.text(0, 0, emoji, {
-      fontSize: '28px',
-      fontFamily: 'Arial',
-      resolution: 3,
-    })
+    const textureKey = `fluent-emoji-${Array.from(emoji)
+      .map((character) => character.codePointAt(0)?.toString(16))
+      .join('-')}`
 
-    emojiText.setOrigin(0.5)
+    // Stop if the emoji texture hasn't loaded.
+    if (!this.textures.exists(textureKey)) return
 
-    // Calculate the bubble dimensions.
-    const padding = 8
-    const width = emojiText.width + padding * 2
-    const height = emojiText.height + padding * 2
+    // Create the Fluent Emoji image.
+    const emojiImage = this.add.image(0, 0, textureKey)
+    emojiImage.setDisplaySize(32, 32)
+
+    // Calculate the circular bubble dimensions.
+    const size = 44
 
     // Create and display the emoji bubble.
-    this.createBubble(sessionId, character, emojiText, width, height, 5000)
+    this.createBubble(
+      sessionId,
+      character,
+      emojiImage,
+      size,
+      size,
+      5000,
+      0,
+      true,
+    )
   }
 
   // Create and display a bubble above a player's character.
   private createBubble(
     sessionId: string,
     character: Phaser.GameObjects.Container,
-    content: Phaser.GameObjects.Text,
+    content: Phaser.GameObjects.GameObject,
     width: number,
     height: number,
     displayDuration: number,
     verticalOffset = 0,
+    circular = false,
   ) {
     // Remove the player's previous bubble, if one exists.
     const previousBubble = this.activeBubbles.get(sessionId)
@@ -235,20 +282,52 @@ export default class TownScene extends Phaser.Scene {
 
     background.fillStyle(0xffffff, 1)
     background.lineStyle(2, 0x526477, 1)
-    background.fillRoundedRect(-width / 2, -height / 2, width, height, 8)
-    background.strokeRoundedRect(-width / 2, -height / 2, width, height, 8)
 
-    // Draw the speech bubble tail.
-    background.fillTriangle(
-      -7,
-      height / 2 - 1,
-      7,
-      height / 2 - 1,
-      0,
-      height / 2 + 8,
-    )
-    background.lineBetween(-7, height / 2 - 1, 0, height / 2 + 8)
-    background.lineBetween(0, height / 2 + 8, 7, height / 2 - 1)
+    if (circular) {
+      // Draw the circular bubble.
+      background.fillCircle(0, 0, width / 2)
+      background.strokeCircle(0, 0, width / 2)
+
+      // Cover the circular border where the tail connects.
+      background.fillStyle(0xffffff, 1)
+      background.fillTriangle(
+        -8,
+        height / 2 - 2,
+        8,
+        height / 2 - 2,
+        0,
+        height / 2 + 9,
+      )
+
+      // Draw the tail.
+      background.lineStyle(2, 0x526477, 1)
+      background.fillTriangle(
+        -7,
+        height / 2 - 1,
+        7,
+        height / 2 - 1,
+        0,
+        height / 2 + 8,
+      )
+      background.lineBetween(-7, height / 2 - 1, 0, height / 2 + 8)
+      background.lineBetween(0, height / 2 + 8, 7, height / 2 - 1)
+    } else {
+      // Draw the rounded rectangular bubble.
+      background.fillRoundedRect(-width / 2, -height / 2, width, height, 8)
+      background.strokeRoundedRect(-width / 2, -height / 2, width, height, 8)
+
+      // Draw the tail.
+      background.fillTriangle(
+        -7,
+        height / 2 - 1,
+        7,
+        height / 2 - 1,
+        0,
+        height / 2 + 8,
+      )
+      background.lineBetween(-7, height / 2 - 1, 0, height / 2 + 8)
+      background.lineBetween(0, height / 2 + 8, 7, height / 2 - 1)
+    }
 
     // Add the background and content to the bubble.
     bubble.add([background, content])
@@ -397,32 +476,65 @@ export default class TownScene extends Phaser.Scene {
     this.player = localPlayer
   }
 
-  // Create the movement hint.
-  private createMovementHint() {
-    const movementHint = this.add.container(480, 50)
+  // Synchronize player positions when returning to the game.
+  private syncPlayerPositions() {
+    const players = this.room.state?.players
 
-    const hintBackground = this.add.graphics()
+    if (!players) return
 
-    // Soft white background with a subtle blue border.
-    hintBackground.fillStyle(0xffffff, 0.94)
-    hintBackground.lineStyle(1.5, 0x4aabda, 1)
-    hintBackground.fillRoundedRect(-120, -24, 240, 48, 12)
-    hintBackground.strokeRoundedRect(-120, -24, 240, 48, 12)
+    players.forEach((player, sessionId) => {
+      const character =
+        sessionId === this.room.sessionId
+          ? this.player
+          : this.remotePlayers.get(sessionId)
 
-    const hintText = this.add.text(0, 0, 'Click anywhere to move!', {
-      fontSize: '15px',
-      fontStyle: 'bold',
-      color: '#4AABDA',
-      fontFamily: 'Arial',
-      resolution: 3,
+      if (!character) return
+
+      // Stop any outdated movement animation.
+      this.tweens.killTweensOf(character)
+
+      // Stop the walking animation on the character's limbs.
+      const legs = character.getByName('legs') as Phaser.GameObjects.Container
+      const arms = character.getByName('arms') as Phaser.GameObjects.Container
+
+      const leftLeg = legs.getAt(0) as Phaser.GameObjects.Graphics
+      const rightLeg = legs.getAt(1) as Phaser.GameObjects.Graphics
+      const leftArm = arms.getAt(0) as Phaser.GameObjects.Graphics
+      const rightArm = arms.getAt(1) as Phaser.GameObjects.Graphics
+
+      this.tweens.killTweensOf([leftLeg, rightLeg, leftArm, rightArm])
+
+      // Return limbs to their idle positions.
+      leftLeg.setAngle(0)
+      rightLeg.setAngle(0)
+      leftArm.setAngle(0)
+      rightArm.setAngle(0)
+
+      // Move directly to the latest synchronized position.
+      character.setPosition(player.x, player.y)
+      character.setDepth(player.y)
+
+      // Update the last known destination.
+      this.playerTargets.set(sessionId, {
+        x: player.x,
+        y: player.y,
+      })
     })
 
-    hintText.setOrigin(0.5)
+    // Remove the outdated destination marker.
+    if (this.destinationMarker) {
+      this.tweens.killTweensOf(this.destinationMarker)
+      this.destinationMarker.destroy()
+      this.destinationMarker = undefined
+    }
+  }
 
-    movementHint.add([hintBackground, hintText])
-    movementHint.setDepth(1000)
-
-    return movementHint
+  // Handle returning to the game after switching tabs or windows.
+  private handleVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
+      this.syncPlayers()
+      this.syncPlayerPositions()
+    }
   }
 
   // Synchronize remote players with the Colyseus room.
@@ -460,11 +572,19 @@ export default class TownScene extends Phaser.Scene {
 
           this.remotePlayers.set(sessionId, remoteCharacter)
 
+          // Store the remote player's display name.
+          this.remotePlayerNames.set(sessionId, player.name)
+
           // Store the initial position without triggering movement.
           this.playerTargets.set(sessionId, {
             x: player.x,
             y: player.y,
           })
+
+          // Notify React when a new player joins after initial synchronization.
+          if (this.hasSyncedPlayers) {
+            this.onPlayerJoined(player.name)
+          }
         }
 
         character = remoteCharacter
@@ -498,11 +618,22 @@ export default class TownScene extends Phaser.Scene {
     // Remove characters belonging to players who left.
     for (const [sessionId, character] of this.remotePlayers) {
       if (!currentSessionIds.has(sessionId)) {
+        // Notify React when a remote player leaves.
+        const displayName = this.remotePlayerNames.get(sessionId)
+
+        if (displayName) {
+          this.onPlayerLeft(displayName)
+        }
+
         character.destroy()
         this.remotePlayers.delete(sessionId)
+        this.remotePlayerNames.delete(sessionId)
         this.playerTargets.delete(sessionId)
       }
     }
+
+    // Mark the initial player synchronization as complete.
+    this.hasSyncedPlayers = true
   }
 
   // Set up chat and emoji message listeners.
@@ -537,7 +668,7 @@ export default class TownScene extends Phaser.Scene {
   }
 
   // Set up point-and-click movement controls.
-  private setupMovementControls(movementHint: Phaser.GameObjects.Container) {
+  private setupMovementControls() {
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       // Get pointer coordinates.
       const x = Phaser.Math.Clamp(pointer.worldX, 25, 935)
@@ -557,15 +688,8 @@ export default class TownScene extends Phaser.Scene {
         return
       }
 
-      // Hide the movement hint after the player's first move.
-      if (movementHint.active) {
-        this.tweens.add({
-          targets: movementHint,
-          alpha: 0,
-          duration: 200,
-          onComplete: () => movementHint.destroy(),
-        })
-      }
+      // Hide the movement hint after the first valid movement click.
+      this.onFirstMovement()
 
       const direction = x < this.player.x ? -1 : 1
 
@@ -611,6 +735,19 @@ export default class TownScene extends Phaser.Scene {
     })
   }
 
+  // Preload Fluent Emoji assets used in chat reactions.
+  preload() {
+    EMOJI_BUBBLE_ASSETS.forEach((emoji) => {
+      const textureKey = `fluent-emoji-${Array.from(emoji)
+        .map((character) => character.codePointAt(0)?.toString(16))
+        .join('-')}`
+
+      const url = getFluentEmojiCDN(emoji, { cdn: 'unpkg', type: 'flat' })
+
+      this.load.image(textureKey, url)
+    })
+  }
+
   // Automatically called when the scene starts.
   create() {
     // Create the town environment.
@@ -619,19 +756,30 @@ export default class TownScene extends Phaser.Scene {
     // Create the local player.
     this.createLocalPlayer()
 
-    // Show a movement hint for new players.
-    const movementHint = this.createMovementHint()
-
     // Listen for synchronized player updates.
     this.room.onStateChange(() => this.syncPlayers())
 
     // Synchronize the initial room state.
     this.syncPlayers()
 
+    // Notify the local player that they joined the town.
+    this.onPlayerJoined(this.displayName)
+
     // Set up chat and emoji message listeners.
     this.setupMessageHandlers()
 
     // Point-and-click movement.
-    this.setupMovementControls(movementHint)
+    this.setupMovementControls()
+
+    // Synchronize player positions when returning to the game.
+    document.addEventListener('visibilitychange', this.handleVisibilityChange)
+
+    // Remove the listener when the scene shuts down.
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      document.removeEventListener(
+        'visibilitychange',
+        this.handleVisibilityChange,
+      )
+    })
   }
 }

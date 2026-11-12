@@ -79,6 +79,90 @@
   height: 100% !important;
 }
 
+/* Game notifications */
+.game-canvas-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.game-notification {
+  position: absolute;
+  top: 28px;
+  left: 50%;
+  z-index: 5;
+  padding: 12px 20px;
+  border: 1px solid #d5dee8;
+  border-radius: 10px;
+  background: #fff;
+  color: #26384b;
+  font-size: 15px;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
+  transform: translateX(-50%);
+
+  /* Fade the notification in and out. */
+  animation: notification-fade 3s ease forwards;
+}
+
+@keyframes notification-fade {
+  0% {
+    opacity: 0;
+  }
+
+  8.33%,
+  83.33% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Movement hint */
+.movement-hint {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 20px;
+  border: 1px solid #d5dee8;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 95%);
+  color: #26384b;
+  font-size: 14px;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.movement-hint-icon {
+  width: 22px;
+  height: 22px;
+  stroke-width: 2;
+}
+
+/* Fade out the movement hint. */
+.movement-hint.fading {
+  animation: movement-hint-fade-out 0.5s ease forwards;
+}
+
+@keyframes movement-hint-fade-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
 /* Chat toolbar */
 .chat-bar {
   position: relative;
@@ -191,6 +275,9 @@
   padding: 4px;
   font-size: 24px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .emoji-option:hover {
@@ -244,11 +331,13 @@
 .loading-screen {
   position: absolute;
   inset: 0;
+  z-index: 10;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 20px;
+  border-radius: 12px;
   background: #26384b;
   color: #fff;
   font:

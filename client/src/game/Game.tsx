@@ -1,21 +1,37 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Phaser from 'phaser'
 import type { Room } from '@colyseus/sdk'
 import type { MyRoomState } from './types'
 import TownScene from './scenes/TownScene'
 import type { CharacterType } from './objects/PlayerCharacter'
+import { MousePointerClick } from 'lucide-react'
 
 // Defines the props passed from React.
 interface GameProps {
   room: Room<MyRoomState> // require Colyseus room
   characterType: CharacterType
   displayName: string
+  onReady: () => void
 }
 
 // Initializes and manages the Phaser game.
-export default function Game({ room, characterType, displayName }: GameProps) {
+export default function Game({
+  room,
+  characterType,
+  displayName,
+  onReady,
+}: GameProps) {
   // Reference to div.
   const gameRef = useRef<HTMLDivElement>(null)
+
+  // Stores the current game notification.
+  const [notification, setNotification] = useState<string | null>(null)
+
+  // Controls whether the movement hint is displayed.
+  const [showMovementHint, setShowMovementHint] = useState(true)
+
+  // Tracks whether the movement hint is fading out.
+  const [isMovementHintFading, setIsMovementHintFading] = useState(false)
 
   // Runs after rendering.
   useEffect(() => {
@@ -42,11 +58,32 @@ export default function Game({ room, characterType, displayName }: GameProps) {
     game.events.once(Phaser.Core.Events.READY, () => {
       if (!active) return
 
-      // Pass the Colyseus room connection to the scene.
-      game.scene.add('TownScene', TownScene, true, {
+      // Register the town scene without starting it.
+      game.scene.add('TownScene', TownScene, false)
+
+      const townScene = game.scene.getScene('TownScene')
+
+      // Wait until the town has finished creating.
+      townScene.events.once(Phaser.Scenes.Events.CREATE, () => {
+        if (active) {
+          onReady()
+        }
+      })
+
+      // Start the town scene.
+      game.scene.start('TownScene', {
         room,
         characterType,
         displayName,
+        onPlayerJoined: (name: string) => {
+          setNotification(`${name} joined the game!`)
+        },
+        onPlayerLeft: (name: string) => {
+          setNotification(`${name} left the game!`)
+        },
+        onFirstMovement: () => {
+          setIsMovementHintFading(true)
+        },
       })
     })
 
@@ -56,8 +93,43 @@ export default function Game({ room, characterType, displayName }: GameProps) {
       game.destroy(true)
       game.canvas?.remove()
     }
-  }, [room, characterType, displayName])
+  }, [room, characterType, displayName, onReady])
+
+  // Automatically dismisses the current game notification.
+  useEffect(() => {
+    if (!notification) return
+
+    // Remove the notification after 3 seconds.
+    const timeout = window.setTimeout(() => {
+      setNotification(null)
+    }, 3000)
+
+    // Clear the timer when the notification changes or the component unmounts.
+    return () => {
+      window.clearTimeout(timeout)
+    }
+  }, [notification])
 
   // HTML element Phaser uses as parent
-  return <div ref={gameRef} />
+  return (
+    <div ref={gameRef} className="game-canvas-container">
+      {/* Display the current game notification. */}
+      {notification && (
+        <div className="game-notification">
+          <strong>{notification}</strong>
+        </div>
+      )}
+
+      {/* Display the movement hint. */}
+      {showMovementHint && (
+        <div
+          className={`movement-hint ${isMovementHintFading ? 'fading' : ''}`}
+          onAnimationEnd={() => setShowMovementHint(false)}
+        >
+          <MousePointerClick className="movement-hint-icon" />
+          <strong>Click anywhere to move</strong>
+        </div>
+      )}
+    </div>
+  )
 }

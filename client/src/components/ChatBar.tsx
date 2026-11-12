@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Room } from '@colyseus/sdk'
+import { Smile, Send, Users, UserRound, Settings } from 'lucide-react'
+import { FluentEmoji } from '@lobehub/fluent-emoji'
 
 type ChatBarProps = {
   room: Room
@@ -128,30 +130,34 @@ function ChatBar({ room, isDisabled }: ChatBarProps) {
       <div className="emoji-controls" ref={emojiPickerRef}>
         {/* Emoji button */}
         <button
+          type="button"
           className="chat-action"
           aria-label="Emojis"
           title="Emojis"
           onClick={() => setIsEmojiPickerOpen((open) => !open)}
           disabled={!room}
         >
-          ☺
+          <Smile size={20} />
         </button>
 
         {/* Emoji picker */}
-        {isEmojiPickerOpen && (
-          <div className="emoji-picker">
-            {EMOJIS.map((emoji) => (
-              <button
-                key={emoji}
-                className="emoji-option"
-                onClick={() => sendEmoji(emoji)}
-                disabled={isChatCoolingDown}
-              >
-                {emoji}
-              </button>
-            ))}
-          </div>
-        )}
+        <div
+          className="emoji-picker"
+          style={{ display: isEmojiPickerOpen ? undefined : 'none' }}
+          aria-hidden={!isEmojiPickerOpen}
+        >
+          {EMOJIS.map((emoji) => (
+            <button
+              key={emoji}
+              type="button"
+              className="emoji-option"
+              onClick={() => sendEmoji(emoji)}
+              disabled={isChatCoolingDown}
+            >
+              <FluentEmoji emoji={emoji} type="flat" size={28} />
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Message input */}
@@ -172,30 +178,42 @@ function ChatBar({ room, isDisabled }: ChatBarProps) {
 
       {/* Send button */}
       <button
+        type="button"
         className="chat-action send-button"
         onClick={sendMessage}
         disabled={!room || !chatInput.trim() || isChatCoolingDown}
       >
-        Send
+        <Send size={18} />
       </button>
 
       {/* Player list — functionality will be added later. */}
-      <button className="chat-action" aria-label="Players" title="Players">
-        👥
+      <button
+        type="button"
+        className="chat-action"
+        aria-label="Players"
+        title="Players"
+      >
+        <Users size={20} />
       </button>
 
       {/* Profile — functionality will be added later. */}
       <button
+        type="button"
         className="chat-action"
         aria-label="My Profile"
         title="My Profile"
       >
-        👤
+        <UserRound size={20} />
       </button>
 
       {/* Settings — functionality will be added later. */}
-      <button className="chat-action" aria-label="Settings" title="Settings">
-        ⚙
+      <button
+        type="button"
+        className="chat-action"
+        aria-label="Settings"
+        title="Settings"
+      >
+        <Settings size={20} />
       </button>
     </div>
   )

@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 import type { Room } from '@colyseus/sdk'
+import { LogOut, Users } from 'lucide-react'
 import './GameHeader.css'
 
 // Define the props required by the game header.
@@ -70,9 +71,7 @@ function GameHeader({
             onClick={onLeaveGame}
             aria-label="Leave Game"
           >
-            <span className="leave-game-icon" aria-hidden="true">
-              ↪
-            </span>
+            <LogOut size={18} />
             <span className="leave-game-label">Leave Game</span>
           </button>
         )}
@@ -90,6 +89,7 @@ function GameHeader({
           <div className="room-info">
             <span className="room-name">{roomName}</span>
             <span className="room-player-count">
+              <Users size={14} />
               {playerCount} {playerCount === 1 ? 'player' : 'players'} online
             </span>
           </div>
