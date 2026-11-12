@@ -1,7 +1,8 @@
+import type { CharacterType } from '../../game/objects/PlayerCharacter'
+import CharacterPreview from '../../game/CharacterPreview'
+import { useEffect, useRef } from 'react'
+import useScaledStage from '../../hooks/useScaledStage'
 import './CharacterSelection.css'
-import type { CharacterType } from '../game/objects/PlayerCharacter'
-import CharacterPreview from '../game/CharacterPreview'
-import { useEffect, useRef, useState } from 'react'
 
 type CharacterSelectionProps = {
   characterType: CharacterType | null
@@ -22,33 +23,9 @@ function CharacterSelection({
   joinError,
   onJoin,
 }: CharacterSelectionProps) {
-  // Reference the available character-selection viewport.
-  const selectionViewportRef = useRef<HTMLElement>(null)
-
-  // Scale the 960 × 540 reference layout to fit the available space.
-  const [scale, setScale] = useState(1)
-
-  // Recalculate the scale whenever the available viewport changes.
-  useEffect(() => {
-    const viewport = selectionViewportRef.current
-
-    if (!viewport) return
-
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries[0]
-
-      if (!entry) return
-
-      const { width, height } = entry.contentRect
-      const nextScale = Math.min(width / 960, height / 540)
-
-      setScale(nextScale)
-    })
-
-    observer.observe(viewport)
-
-    return () => observer.disconnect()
-  }, [])
+  // Scale the character-selection layout to fit the available space.
+  const { containerRef: selectionViewportRef, scale } =
+    useScaledStage<HTMLElement>()
 
   // Reference the display-name input.
   const nameInputRef = useRef<HTMLInputElement>(null)
