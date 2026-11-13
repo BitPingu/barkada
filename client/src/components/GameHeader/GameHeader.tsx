@@ -41,7 +41,7 @@ function GameHeader({
   const statusLabel = {
     reconnecting: 'Reconnecting...',
     offline: 'Offline',
-    disconnected: 'Connection Lost',
+    disconnected: 'Disconnected',
     connected: 'Connected',
     online: 'Online',
     checking: 'Checking...',

@@ -37,23 +37,11 @@ export default class TownScene extends Phaser.Scene {
   // Stores the player's display name.
   private displayName!: string
 
-  // Handles notifications when another player joins the room.
-  private onPlayerJoined!: (displayName: string) => void
-
-  // Handles notifications when another player leaves the room.
-  private onPlayerLeft!: (displayName: string) => void
-
   // Handles the player's first movement click.
   private onFirstMovement!: () => void
 
-  // Tracks whether the initial player synchronization has completed.
-  private hasSyncedPlayers = false
-
   // Stores characters belonging to other players.
   private remotePlayers = new Map<string, Phaser.GameObjects.Container>()
-
-  // Stores the display names of remote players.
-  private remotePlayerNames = new Map<string, string>()
 
   // Tracks the active speech bubble for each player.
   private activeBubbles = new Map<string, Phaser.GameObjects.Container>()
@@ -77,16 +65,12 @@ export default class TownScene extends Phaser.Scene {
     room: Room<MyRoomState>
     characterType: CharacterType
     displayName: string
-    onPlayerJoined: (displayName: string) => void
-    onPlayerLeft: (displayName: string) => void
     onFirstMovement: () => void
   }) {
     // Store the room connection, selected character type, and display name.
     this.room = data.room
     this.characterType = data.characterType
     this.displayName = data.displayName
-    this.onPlayerJoined = data.onPlayerJoined
-    this.onPlayerLeft = data.onPlayerLeft
     this.onFirstMovement = data.onFirstMovement
   }
 
@@ -624,19 +608,11 @@ export default class TownScene extends Phaser.Scene {
 
           this.remotePlayers.set(sessionId, remoteCharacter)
 
-          // Store the remote player's display name.
-          this.remotePlayerNames.set(sessionId, player.name)
-
           // Store the initial position without triggering movement.
           this.playerTargets.set(sessionId, {
             x: player.x,
             y: player.y,
           })
-
-          // Notify React when a new player joins after initial synchronization.
-          if (this.hasSyncedPlayers) {
-            this.onPlayerJoined(player.name)
-          }
         }
 
         character = remoteCharacter
@@ -670,24 +646,13 @@ export default class TownScene extends Phaser.Scene {
     // Remove characters belonging to players who left.
     for (const [sessionId, character] of this.remotePlayers) {
       if (!currentSessionIds.has(sessionId)) {
-        // Notify React when a remote player leaves.
-        const displayName = this.remotePlayerNames.get(sessionId)
-
-        if (displayName) {
-          this.onPlayerLeft(displayName)
-        }
-
         // Remove the player's active bubble before destroying their character.
         this.removeBubble(sessionId)
         character.destroy()
         this.remotePlayers.delete(sessionId)
-        this.remotePlayerNames.delete(sessionId)
         this.playerTargets.delete(sessionId)
       }
     }
-
-    // Mark the initial player synchronization as complete.
-    this.hasSyncedPlayers = true
   }
 
   // Set up chat and emoji message listeners.
@@ -825,9 +790,6 @@ export default class TownScene extends Phaser.Scene {
 
     // Synchronize the initial room state.
     this.syncPlayers()
-
-    // Notify the local player that they joined the town.
-    this.onPlayerJoined(this.displayName)
 
     // Set up chat and emoji message listeners.
     this.setupMessageHandlers()

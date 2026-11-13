@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Room } from '@colyseus/sdk'
 import client from '../game/colyseus'
 import type { CharacterType } from '../game/objects/PlayerCharacter'
+import type { NotificationMessage } from '../game/types'
 
 function useGameConnection() {
   // Store the active Colyseus room connection.
@@ -39,71 +40,184 @@ function useGameConnection() {
   // Stores the room's display name.
   const [roomName, setRoomName] = useState<string | null>(null)
 
+  // Stores notifications received from the room.
+  const [notifications, setNotifications] = useState<
+    { id: number; message: string; startAt: number; expiresAt: number }[]
+  >([])
+
+  // Generates unique IDs for notifications.
+  const notificationId = useRef(0)
+
+  // Tracks the timeout for each notification.
+  const notificationTimeouts = useRef(new Map<number, number>())
+
+  // Stores the estimated difference between the server and local clocks.
+  const serverClockOffset = useRef<number | null>(null)
+
   // Reuse an in-progress session recovery request.
   const recoveryPromiseRef = useRef<Promise<Room> | null>(null)
 
   // Track the currently active room connection.
   const roomRef = useRef<Room | null>(null)
 
-  // Set up event handlers for a room connection.
-  const setupRoomConnection = useCallback((connection: Room) => {
-    // Track the active room connection.
-    roomRef.current = connection
-    setRoom(connection)
-
-    connection.onDrop((code, reason) => {
-      // Ignore events from connections that are no longer active.
-      if (roomRef.current !== connection) return
-
-      console.warn('Connection dropped:', code, reason)
-      setIsDisconnected(true)
-      setIsReconnecting(true)
-      setConnectionError(null)
+  // Clear notifications and their pending timers.
+  const clearNotifications = useCallback(() => {
+    notificationTimeouts.current.forEach((timeout) => {
+      window.clearTimeout(timeout)
     })
 
-    connection.onReconnect(() => {
-      // Ignore events from connections that are no longer active.
-      if (roomRef.current !== connection) return
+    notificationTimeouts.current.clear()
+    setNotifications([])
+  }, [])
 
-      setIsDisconnected(false)
-      setIsReconnecting(false)
-      setConnectionError(null)
+  // Set up event handlers for a room connection.
+  const setupRoomConnection = useCallback(
+    (connection: Room) => {
+      // Track the active room connection.
+      roomRef.current = connection
+      setRoom(connection)
 
-      // Save the refreshed token after the reconnection callback completes.
-      queueMicrotask(() => {
+      // Reset the clock offset for the new connection.
+      serverClockOffset.current = null
+
+      // Listen for the server's clock synchronization response.
+      connection.onMessage(
+        'time-sync',
+        (message: { clientSentAt: number; serverNow: number }) => {
+          // Ignore responses from connections that are no longer active.
+          if (roomRef.current !== connection) return
+
+          const clientReceivedAt = Date.now()
+
+          // Estimate the server clock offset using the round-trip midpoint.
+          serverClockOffset.current =
+            message.serverNow - (message.clientSentAt + clientReceivedAt) / 2
+        },
+      )
+
+      // Send a clock synchronization request.
+      const clientSentAt = Date.now()
+
+      connection.send('time-sync', { clientSentAt })
+
+      // Listen for notifications from the room.
+      connection.onMessage('notification', (message: NotificationMessage) => {
+        // Ignore notifications from connections that are no longer active.
         if (roomRef.current !== connection) return
 
-        const refreshedToken = connection.reconnectionToken
+        // Use the synchronized clock offset, falling back to the notification timestamp.
+        const clockOffset =
+          serverClockOffset.current ?? message.serverNow - Date.now()
 
-        sessionStorage.setItem('barkada-reconnection-token', refreshedToken)
+        // Convert the server timestamps into the local clock's time.
+        const startAt = message.startAt - clockOffset
+        const expiresAt = message.expiresAt - clockOffset
+
+        // Ignore notifications that have already expired.
+        if (expiresAt <= Date.now()) return
+
+        const id = ++notificationId.current
+
+        setNotifications((current) => [
+          ...current,
+          {
+            id,
+            message: message.message,
+            startAt,
+            expiresAt,
+          },
+        ])
       })
+
+      connection.onDrop((code, reason) => {
+        // Ignore events from connections that are no longer active.
+        if (roomRef.current !== connection) return
+
+        console.warn('Connection dropped:', code, reason)
+        setIsDisconnected(true)
+        setIsReconnecting(true)
+        setConnectionError(null)
+      })
+
+      connection.onReconnect(() => {
+        // Ignore events from connections that are no longer active.
+        if (roomRef.current !== connection) return
+
+        setIsDisconnected(false)
+        setIsReconnecting(false)
+        setConnectionError(null)
+
+        // Save the refreshed token after the reconnection callback completes.
+        queueMicrotask(() => {
+          if (roomRef.current !== connection) return
+
+          const refreshedToken = connection.reconnectionToken
+
+          sessionStorage.setItem('barkada-reconnection-token', refreshedToken)
+        })
+      })
+
+      connection.onLeave((code, reason) => {
+        // Ignore events from connections that are no longer active.
+        if (roomRef.current !== connection) return
+
+        console.warn('Left room:', code, reason)
+
+        roomRef.current = null
+        clearNotifications()
+        setRoom(null)
+        setIsDisconnected(true)
+
+        // Clear saved session data because this room can no longer be recovered.
+        sessionStorage.removeItem('barkada-reconnection-token')
+        sessionStorage.removeItem('barkada-character-type')
+
+        setIsReconnecting(false)
+        setConnectionError("You've lost your connection to the game.")
+      })
+
+      // Update the count whenever the room state changes.
+      connection.onStateChange((state) => {
+        // Ignore updates from connections that are no longer active.
+        if (roomRef.current !== connection) return
+
+        setPlayerCount(state.players.size)
+      })
+    },
+    [clearNotifications],
+  )
+
+  // Removes visible notifications when their scheduled display duration expires.
+  useEffect(() => {
+    notifications.slice(0, 3).forEach(({ id, expiresAt }) => {
+      // Don't start another timer for an already visible notification.
+      if (notificationTimeouts.current.has(id)) return
+
+      // Calculate how much time remains before the notification expires.
+      const remainingTime = Math.max(0, expiresAt - Date.now())
+
+      const timeout = window.setTimeout(() => {
+        setNotifications((current) =>
+          current.filter((notification) => notification.id !== id),
+        )
+        notificationTimeouts.current.delete(id)
+      }, remainingTime)
+
+      notificationTimeouts.current.set(id, timeout)
     })
+  }, [notifications])
 
-    connection.onLeave((code, reason) => {
-      // Ignore events from connections that are no longer active.
-      if (roomRef.current !== connection) return
+  // Clears any remaining notification timers when the hook unmounts.
+  useEffect(() => {
+    const timeouts = notificationTimeouts.current
 
-      console.warn('Left room:', code, reason)
+    return () => {
+      timeouts.forEach((timeout) => {
+        window.clearTimeout(timeout)
+      })
 
-      roomRef.current = null
-      setRoom(null)
-      setIsDisconnected(true)
-
-      // Clear saved session data because this room can no longer be recovered.
-      sessionStorage.removeItem('barkada-reconnection-token')
-      sessionStorage.removeItem('barkada-character-type')
-
-      setIsReconnecting(false)
-      setConnectionError("You've lost your connection to the game.")
-    })
-
-    // Update the count whenever the room state changes.
-    connection.onStateChange((state) => {
-      // Ignore updates from connections that are no longer active.
-      if (roomRef.current !== connection) return
-
-      setPlayerCount(state.players.size)
-    })
+      timeouts.clear()
+    }
   }, [])
 
   // Join the game using the selected character type and display name.
@@ -328,6 +442,7 @@ function useGameConnection() {
 
     // Clear the room reference immediately to prevent further connection attempts.
     roomRef.current = null
+    clearNotifications()
 
     // Clear any saved reconnection data.
     sessionStorage.removeItem('barkada-reconnection-token')
@@ -350,6 +465,7 @@ function useGameConnection() {
 
     // Clear the room reference so onLeave doesn't report an expired session.
     roomRef.current = null
+    clearNotifications()
 
     // Clear the saved reconnection data.
     sessionStorage.removeItem('barkada-reconnection-token')
@@ -370,6 +486,7 @@ function useGameConnection() {
 
   return {
     room,
+    notifications,
     characterType,
     setCharacterType,
     displayName,

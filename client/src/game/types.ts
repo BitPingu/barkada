@@ -30,3 +30,11 @@ export interface EmojiMessage {
   emoji: string
   expiresAt: number
 }
+
+// Represents a notification received from the server.
+export interface NotificationMessage {
+  message: string
+  startAt: number
+  expiresAt: number
+  serverNow: number
+}

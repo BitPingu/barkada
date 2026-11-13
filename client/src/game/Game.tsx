@@ -9,6 +9,10 @@ import { MousePointerClick } from 'lucide-react'
 // Defines the props passed from React.
 interface GameProps {
   room: Room<MyRoomState> // require Colyseus room
+  notifications: {
+    id: number
+    message: string
+  }[]
   characterType: CharacterType
   displayName: string
   onReady: () => void
@@ -17,6 +21,7 @@ interface GameProps {
 // Initializes and manages the Phaser game.
 export default function Game({
   room,
+  notifications,
   characterType,
   displayName,
   onReady,
@@ -27,19 +32,11 @@ export default function Game({
   // Tracks the notification stack container.
   const notificationStackRef = useRef<HTMLDivElement>(null)
 
-  // Stores notification positions before the stack changes.
-  const previousPositions = useRef(new Map<number, DOMRect>())
+  // Stores notification positions before the layout changes.
+  const previousPositions = useRef(new Map<number, number>())
 
-  // Stores the active game notifications.
-  const [notifications, setNotifications] = useState<
-    { id: number; message: string }[]
-  >([])
-
-  // Generates unique IDs for notifications.
-  const notificationId = useRef(0)
-
-  // Tracks the timeout for each notification.
-  const notificationTimeouts = useRef(new Map<number, number>())
+  // Tracks active notification position animations.
+  const notificationAnimations = useRef(new Map<number, Animation>())
 
   // Controls whether the movement hint is displayed.
   const [showMovementHint, setShowMovementHint] = useState(true)
@@ -47,85 +44,73 @@ export default function Game({
   // Tracks whether the movement hint is fading out.
   const [isMovementHintFading, setIsMovementHintFading] = useState(false)
 
-  // Adds a notification to the notification list.
-  function addNotification(message: string) {
-    const id = ++notificationId.current
-
-    setNotifications((current) => [...current, { id, message }])
-  }
-
-  // Clears any remaining notification timers when the component unmounts.
-  useEffect(() => {
-    const timeouts = notificationTimeouts.current
-
-    return () => {
-      timeouts.forEach((timeout) => {
-        window.clearTimeout(timeout)
-      })
-
-      timeouts.clear()
-    }
-  }, [])
-
-  // Starts the dismissal timer for each of the first three notifications.
-  useEffect(() => {
-    notifications.slice(0, 3).forEach(({ id }) => {
-      // Don't restart a timer if the notification is already visible.
-      if (notificationTimeouts.current.has(id)) return
-
-      const timeout = window.setTimeout(() => {
-        setNotifications((current) =>
-          current.filter((notification) => notification.id !== id),
-        )
-
-        notificationTimeouts.current.delete(id)
-      }, 3000)
-
-      notificationTimeouts.current.set(id, timeout)
-    })
-  }, [notifications])
-
   // Animates notifications when their positions change.
   useLayoutEffect(() => {
     const stack = notificationStackRef.current
     if (!stack) return
 
+    // Cancel previous animations before measuring the new layout.
+    notificationAnimations.current.forEach((animation) => {
+      animation.cancel()
+    })
+
+    notificationAnimations.current.clear()
+
     const elements = stack.querySelectorAll<HTMLElement>(
       '.game-notification-wrapper',
     )
 
-    const currentPositions = new Map<number, DOMRect>()
+    // Store positions for the current layout.
+    const currentPositions = new Map<number, number>()
 
     elements.forEach((element) => {
       const id = Number(element.dataset.notificationId)
-      const currentPosition = element.getBoundingClientRect()
-      const previousPosition = previousPositions.current.get(id)
+      const currentTop = element.getBoundingClientRect().top
+      const previousTop = previousPositions.current.get(id)
 
-      currentPositions.set(id, currentPosition)
+      currentPositions.set(id, currentTop)
 
-      if (!previousPosition) return
+      if (previousTop === undefined) return
 
-      const offsetY = previousPosition.top - currentPosition.top
+      const offsetY = previousTop - currentTop
 
       if (offsetY === 0) return
 
-      // Temporarily move the notification back to its previous position.
-      element.style.transition = 'none'
-      element.style.transform = `translateY(${offsetY}px)`
+      const animation = element.animate(
+        [
+          { transform: `translateY(${offsetY}px)` },
+          { transform: 'translateY(0)' },
+        ],
+        {
+          duration: 500,
+          easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+        },
+      )
 
-      // Force the browser to apply the starting position.
-      element.getBoundingClientRect()
+      notificationAnimations.current.set(id, animation)
 
-      // Animate the notification into its new position.
-      requestAnimationFrame(() => {
-        element.style.transition =
-          'transform 300ms cubic-bezier(0.22, 1, 0.36, 1)'
-        element.style.transform = ''
-      })
+      // Remove the animation once it finishes.
+      animation.onfinish = () => {
+        notificationAnimations.current.delete(id)
+      }
     })
 
+    // Save positions for comparison with the next layout.
     previousPositions.current = currentPositions
   }, [notifications])
+
+  // Clean up notification animations when the component unmounts.
+  useEffect(() => {
+    const animations = notificationAnimations.current
+
+    return () => {
+      animations.forEach((animation) => {
+        animation.cancel()
+      })
+
+      animations.clear()
+    }
+  }, [])
 
   // Runs after rendering.
   useEffect(() => {
@@ -169,12 +154,6 @@ export default function Game({
         room,
         characterType,
         displayName,
-        onPlayerJoined: (name: string) => {
-          addNotification(`${name} joined the game!`)
-        },
-        onPlayerLeft: (name: string) => {
-          addNotification(`${name} left the game!`)
-        },
         onFirstMovement: () => {
           setIsMovementHintFading(true)
         },

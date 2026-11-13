@@ -11,6 +11,7 @@ function App() {
   // Retrieve connection state and actions from the custom hook.
   const {
     room,
+    notifications,
     characterType,
     setCharacterType,
     displayName,
@@ -70,6 +71,7 @@ function App() {
       {/* Shared game interface for character selection and gameplay. */}
       <GameInterface
         room={room}
+        notifications={notifications}
         characterType={characterType}
         setCharacterType={setCharacterType}
         displayName={displayName}

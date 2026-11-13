@@ -28,11 +28,40 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
   // Tracks the last time each player sent a chat message.
   private lastChatMessage = new Map<string, number>()
 
+  // Broadcasts a notification with a synchronized display schedule.
+  private broadcastNotification(message: string) {
+    const now = Date.now()
+
+    this.broadcast('notification', {
+      message,
+      startAt: now,
+      expiresAt: now + 3000,
+      serverNow: now,
+    })
+  }
+
   onCreate(options: any) {
     // Keep Town Square available when everyone leaves.
     this.autoDispose = false
 
     console.log('Room created:', this.roomId)
+
+    // Respond to client clock synchronization requests.
+    this.onMessage('time-sync', (client, message: { clientSentAt: number }) => {
+      // Reject invalid timestamps.
+      if (
+        typeof message.clientSentAt !== 'number' ||
+        !Number.isFinite(message.clientSentAt)
+      ) {
+        return
+      }
+
+      // Return the original client timestamp and current server time.
+      client.send('time-sync', {
+        clientSentAt: message.clientSentAt,
+        serverNow: Date.now(),
+      })
+    })
 
     // Handle player movement requests.
     this.onMessage('move', (client, message: { x: number; y: number }) => {
@@ -176,6 +205,9 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
     // Add the player to the synchronized room state.
     this.state.players.set(client.sessionId, player)
 
+    // Notify everyone that this player joined.
+    this.broadcastNotification(`${displayName} joined the game!`)
+
     console.log(client.sessionId, 'joined!')
   }
 
@@ -208,6 +240,14 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
 
   // When a player leaves.
   onLeave(client: Client, code: CloseCode) {
+    // Get the player's information before removing them.
+    const player = this.state.players.get(client.sessionId)
+
+    // Notify everyone that this player left.
+    if (player) {
+      this.broadcastNotification(`${player.name} left the game!`)
+    }
+
     // Remove the player from the synchronized room state.
     this.state.players.delete(client.sessionId)
 

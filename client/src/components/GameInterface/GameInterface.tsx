@@ -24,6 +24,12 @@ type ChatBarProps = ComponentProps<typeof ChatBar>
 // Define the props required by the shared game interface.
 interface GameInterfaceProps {
   room: ChatBarProps['room'] | null
+  notifications: {
+    id: number
+    message: string
+    startAt: number
+    expiresAt: number
+  }[]
   characterType: CharacterSelectionProps['characterType']
   setCharacterType: CharacterSelectionProps['setCharacterType']
   displayName: CharacterSelectionProps['displayName']
@@ -41,6 +47,7 @@ interface GameInterfaceProps {
 // Render the shared interface for character selection and gameplay.
 function GameInterface({
   room,
+  notifications,
   characterType,
   setCharacterType,
   displayName,
@@ -117,6 +124,7 @@ function GameInterface({
                 <Suspense fallback={null}>
                   <Game
                     room={room}
+                    notifications={notifications}
                     characterType={characterType!}
                     displayName={displayName}
                     onReady={handleGameReady}
