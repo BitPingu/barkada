@@ -50,22 +50,32 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 7px 11px;
-  border: 1px solid #d5dee8;
-  border-radius: 8px;
+  gap: 8px;
+  padding: 8px 13px;
+  border: 1px solid #e0e5ec;
+  border-radius: 9px;
   background: #fff;
   color: #526477;
   font: inherit;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
 
 .leave-game-button:hover {
-  background: #f0f5fb;
+  border-color: #f0caca;
+  background: #fff5f5;
+  color: #c05252;
+}
+
+.leave-game-button:focus-visible {
+  outline: 2px solid #8ba9cc;
+  outline-offset: 2px;
 }
 
 .leave-game-label {

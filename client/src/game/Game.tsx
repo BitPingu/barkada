@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Phaser from 'phaser'
 import type { Room } from '@colyseus/sdk'
 import type { MyRoomState } from './types'
@@ -24,14 +24,108 @@ export default function Game({
   // Reference to div.
   const gameRef = useRef<HTMLDivElement>(null)
 
-  // Stores the current game notification.
-  const [notification, setNotification] = useState<string | null>(null)
+  // Tracks the notification stack container.
+  const notificationStackRef = useRef<HTMLDivElement>(null)
+
+  // Stores notification positions before the stack changes.
+  const previousPositions = useRef(new Map<number, DOMRect>())
+
+  // Stores the active game notifications.
+  const [notifications, setNotifications] = useState<
+    { id: number; message: string }[]
+  >([])
+
+  // Generates unique IDs for notifications.
+  const notificationId = useRef(0)
+
+  // Tracks the timeout for each notification.
+  const notificationTimeouts = useRef(new Map<number, number>())
 
   // Controls whether the movement hint is displayed.
   const [showMovementHint, setShowMovementHint] = useState(true)
 
   // Tracks whether the movement hint is fading out.
   const [isMovementHintFading, setIsMovementHintFading] = useState(false)
+
+  // Adds a notification to the notification list.
+  function addNotification(message: string) {
+    const id = ++notificationId.current
+
+    setNotifications((current) => [...current, { id, message }])
+  }
+
+  // Clears any remaining notification timers when the component unmounts.
+  useEffect(() => {
+    const timeouts = notificationTimeouts.current
+
+    return () => {
+      timeouts.forEach((timeout) => {
+        window.clearTimeout(timeout)
+      })
+
+      timeouts.clear()
+    }
+  }, [])
+
+  // Starts the dismissal timer for each of the first three notifications.
+  useEffect(() => {
+    notifications.slice(0, 3).forEach(({ id }) => {
+      // Don't restart a timer if the notification is already visible.
+      if (notificationTimeouts.current.has(id)) return
+
+      const timeout = window.setTimeout(() => {
+        setNotifications((current) =>
+          current.filter((notification) => notification.id !== id),
+        )
+
+        notificationTimeouts.current.delete(id)
+      }, 3000)
+
+      notificationTimeouts.current.set(id, timeout)
+    })
+  }, [notifications])
+
+  // Animates notifications when their positions change.
+  useLayoutEffect(() => {
+    const stack = notificationStackRef.current
+    if (!stack) return
+
+    const elements = stack.querySelectorAll<HTMLElement>(
+      '.game-notification-wrapper',
+    )
+
+    const currentPositions = new Map<number, DOMRect>()
+
+    elements.forEach((element) => {
+      const id = Number(element.dataset.notificationId)
+      const currentPosition = element.getBoundingClientRect()
+      const previousPosition = previousPositions.current.get(id)
+
+      currentPositions.set(id, currentPosition)
+
+      if (!previousPosition) return
+
+      const offsetY = previousPosition.top - currentPosition.top
+
+      if (offsetY === 0) return
+
+      // Temporarily move the notification back to its previous position.
+      element.style.transition = 'none'
+      element.style.transform = `translateY(${offsetY}px)`
+
+      // Force the browser to apply the starting position.
+      element.getBoundingClientRect()
+
+      // Animate the notification into its new position.
+      requestAnimationFrame(() => {
+        element.style.transition =
+          'transform 300ms cubic-bezier(0.22, 1, 0.36, 1)'
+        element.style.transform = ''
+      })
+    })
+
+    previousPositions.current = currentPositions
+  }, [notifications])
 
   // Runs after rendering.
   useEffect(() => {
@@ -76,10 +170,10 @@ export default function Game({
         characterType,
         displayName,
         onPlayerJoined: (name: string) => {
-          setNotification(`${name} joined the game!`)
+          addNotification(`${name} joined the game!`)
         },
         onPlayerLeft: (name: string) => {
-          setNotification(`${name} left the game!`)
+          addNotification(`${name} left the game!`)
         },
         onFirstMovement: () => {
           setIsMovementHintFading(true)
@@ -95,30 +189,23 @@ export default function Game({
     }
   }, [room, characterType, displayName, onReady])
 
-  // Automatically dismisses the current game notification.
-  useEffect(() => {
-    if (!notification) return
-
-    // Remove the notification after 3 seconds.
-    const timeout = window.setTimeout(() => {
-      setNotification(null)
-    }, 3000)
-
-    // Clear the timer when the notification changes or the component unmounts.
-    return () => {
-      window.clearTimeout(timeout)
-    }
-  }, [notification])
-
   // HTML element Phaser uses as parent
   return (
     <div ref={gameRef} className="game-canvas-container">
-      {/* Display the current game notification. */}
-      {notification && (
-        <div className="game-notification">
-          <strong>{notification}</strong>
-        </div>
-      )}
+      {/* Display active game notifications. */}
+      <div className="game-notifications" ref={notificationStackRef}>
+        {notifications.slice(0, 3).map(({ id, message }) => (
+          <div
+            className="game-notification-wrapper"
+            data-notification-id={id}
+            key={id}
+          >
+            <div className="game-notification">
+              <strong>{message}</strong>
+            </div>
+          </div>
+        ))}
+      </div>
 
       {/* Display the movement hint. */}
       {showMovementHint && (
