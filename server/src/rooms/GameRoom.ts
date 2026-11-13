@@ -1,5 +1,5 @@
 import { Room, Client, CloseCode, ServerError } from 'colyseus'
-import { MyRoomState } from './schema/MyRoomState.js'
+import { GameRoomState } from './schema/GameRoomState.js'
 import { Player } from './schema/Player.js'
 
 // Emojis players are allowed to send.
@@ -18,12 +18,12 @@ const ALLOWED_EMOJIS = [
   '🙏',
 ]
 
-export class MyRoom extends Room<{ state: MyRoomState }> {
+export class GameRoom extends Room<{ state: GameRoomState }> {
   // Maximum number of players allowed in one room.
   maxClients = 20
 
   // Initialize the synchronized room state.
-  state = new MyRoomState()
+  state = new GameRoomState()
 
   // Tracks the last time each player sent a chat message.
   private lastChatMessage = new Map<string, number>()
@@ -40,8 +40,8 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
     })
   }
 
-  onCreate(options: any) {
-    // Keep Town Square available when everyone leaves.
+  onCreate() {
+    // Keep the room available when everyone leaves.
     this.autoDispose = false
 
     console.log('Room created:', this.roomId)
@@ -50,6 +50,7 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
     this.onMessage('time-sync', (client, message: { clientSentAt: number }) => {
       // Reject invalid timestamps.
       if (
+        !message ||
         typeof message.clientSentAt !== 'number' ||
         !Number.isFinite(message.clientSentAt)
       ) {
@@ -73,6 +74,7 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
 
       // Validate the requested coordinates.
       if (
+        !message ||
         typeof message.x !== 'number' ||
         typeof message.y !== 'number' ||
         !Number.isFinite(message.x) ||
@@ -89,7 +91,7 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
     // Handle incoming chat messages.
     this.onMessage('chat', (client, message: { text: string }) => {
       // Remove leading and trailing whitespace.
-      const text = message.text?.trim()
+      const text = typeof message?.text === 'string' ? message.text.trim() : ''
 
       // Reject empty messages and messages longer than 100 characters.
       if (!text || text.length > 100) {
@@ -133,7 +135,10 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
     // Handle incoming emoji selections.
     this.onMessage('emoji', (client, message: { emoji: string }) => {
       // Reject emojis that aren't in the allowed list.
-      if (!ALLOWED_EMOJIS.includes(message.emoji)) {
+      if (
+        typeof message?.emoji !== 'string' ||
+        !ALLOWED_EMOJIS.includes(message.emoji)
+      ) {
         return
       }
 
@@ -196,7 +201,7 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
     player.x = 480
     player.y = 320
 
-    // Give the player a temporary display name.
+    // Set the player's display name.
     player.name = displayName
 
     // Assign the selected character type.

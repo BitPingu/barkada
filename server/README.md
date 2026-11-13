@@ -1,30 +1,55 @@
-# Welcome to Colyseus!
+# Barkada Server
 
-This project was created with [⚔️ `create-colyseus-app`](https://github.com/colyseus/create-colyseus-app/).
+The multiplayer server for Barkada, a browser-based social game inspired by Club Penguin. Built with [Colyseus](https://colyseus.io/).
 
-[Documentation](https://docs.colyseus.io/)
+## Getting Started
 
-## :crossed_swords: Usage
+Install dependencies:
 
-```
-npm start
-```
+\`\`\`bash
+npm install
+\`\`\`
 
-Then open http://localhost:2567 for the playground, or /monitor for the monitor.
+Start the development server:
 
-## Structure
+\`\`\`bash
+npm run dev
+\`\`\`
 
-- `src/index.ts`: entry point — leave it alone if you plan to deploy to Colyseus Cloud
-- `src/app.config.ts`: server configuration — rooms, HTTP routes, express middleware
-- `src/rooms/MyRoom.ts`: your room handler
-- `src/rooms/schema/MyRoomState.ts`: the state synchronized to every client in the room
-- `test/MyRoom.test.ts`: boots the real server and connects a real client
-- `loadtest/example.ts`: scriptable client for `npm run loadtest`
-- `ecosystem.config.cjs`: pm2 configuration, used when deploying to Colyseus Cloud
+The server runs at `http://localhost:2567`.
+
+During development, the Colyseus Playground is available at `/`, and the server monitor is available at `/monitor`.
+
+## Project Structure
+
+\`\`\`
+server/
+├── src/
+│ ├── rooms/
+│ │ ├── schema/
+│ │ │ ├── GameRoomState.ts
+│ │ │ └── Player.ts
+│ │ └── GameRoom.ts
+│ ├── app.config.ts
+│ └── index.ts
+├── test/
+│ └── GameRoom.test.ts
+└── package.json
+\`\`\`
 
 ## Scripts
 
-- `npm start`: run the server in watch mode (`tsx watch src/index.ts`)
-- `npm test`: run the mocha test suite
-- `npm run build`: compile to `build/`
-- `npm run loadtest`: connect N simulated clients with [`@colyseus/loadtest`](https://github.com/colyseus/colyseus-loadtest/)
+| Command            | Description                                          |
+| ------------------ | ---------------------------------------------------- |
+| `npm run dev`      | Start the development server with automatic restarts |
+| `npm start`        | Start the compiled server                            |
+| `npm test`         | Run the test suite                                   |
+| `npm run build`    | Compile TypeScript into `build/`                     |
+| `npm run clean`    | Remove the compiled build                            |
+| `npm run loadtest` | Run a load test with two simulated clients           |
+
+## Technologies
+
+- [Colyseus](https://colyseus.io/) – Multiplayer game server framework
+- [TypeScript](https://www.typescriptlang.org/) – Server-side development
+- [Mocha](https://mochajs.org/) – Testing

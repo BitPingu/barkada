@@ -2,9 +2,9 @@ import assert from 'assert'
 import { ColyseusTestServer, boot } from '@colyseus/testing'
 
 import appConfig from '../src/app.config.js'
-import { MyRoomState } from '../src/rooms/schema/MyRoomState.js'
+import { GameRoomState } from '../src/rooms/schema/GameRoomState.js'
 
-describe('testing your Colyseus app', () => {
+describe('GameRoom', () => {
   let colyseus: ColyseusTestServer<typeof appConfig>
 
   before(async () => (colyseus = await boot(appConfig)))
@@ -16,10 +16,12 @@ describe('testing your Colyseus app', () => {
 
   it('connects to a room and registers a player', async () => {
     // Create a new room instance.
-    const room = await colyseus.createRoom<MyRoomState>('town_square', {})
+    const room = await colyseus.createRoom<GameRoomState>('main_room', {})
 
     // Connect a client to the room.
-    const client1 = await colyseus.connectTo(room)
+    const client1 = await colyseus.connectTo(room, {
+      displayName: 'Guest 1',
+    })
 
     // Verify the client successfully joined.
     assert.strictEqual(client1.sessionId, room.clients[0].sessionId)

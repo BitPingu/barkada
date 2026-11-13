@@ -37,6 +37,9 @@ function ChatBar({ room, isDisabled }: ChatBarProps) {
   // References the emoji button and picker.
   const emojiPickerRef = useRef<HTMLDivElement>(null)
 
+  // References the chat cooldown timeout.
+  const cooldownTimeoutRef = useRef<number | null>(null)
+
   // Close the emoji picker when clicking outside the emoji controls.
   useEffect(() => {
     // Handle clicks anywhere on the page.
@@ -78,12 +81,21 @@ function ChatBar({ room, isDisabled }: ChatBarProps) {
     }
   }, [])
 
+  // Clear the cooldown timeout when the component unmounts.
+  useEffect(() => {
+    return () => {
+      if (cooldownTimeoutRef.current !== null) {
+        window.clearTimeout(cooldownTimeoutRef.current)
+      }
+    }
+  }, [])
+
   // Send a chat message to the server.
   function sendMessage() {
     const text = chatInput.trim()
 
-    // Don't send empty messages or messages when disconnected or cooling down.
-    if (!text || !room || isChatCoolingDown) {
+    // Don't send empty messages or messages when cooling down.
+    if (!text || isChatCoolingDown) {
       return
     }
 
@@ -94,8 +106,9 @@ function ChatBar({ room, isDisabled }: ChatBarProps) {
     setIsChatCoolingDown(true)
 
     // Re-enable chat after 0.6 seconds.
-    setTimeout(() => {
+    cooldownTimeoutRef.current = window.setTimeout(() => {
       setIsChatCoolingDown(false)
+      cooldownTimeoutRef.current = null
     }, 600)
 
     // Clear the input after sending.
@@ -104,8 +117,8 @@ function ChatBar({ room, isDisabled }: ChatBarProps) {
 
   // Send an emoji to the server.
   function sendEmoji(emoji: string) {
-    // Don't send emojis when disconnected or cooling down.
-    if (!room || isChatCoolingDown) {
+    // Don't send emojis when cooling down.
+    if (isChatCoolingDown) {
       return
     }
 
@@ -116,8 +129,9 @@ function ChatBar({ room, isDisabled }: ChatBarProps) {
     setIsChatCoolingDown(true)
 
     // Re-enable chat after 0.6 seconds.
-    setTimeout(() => {
+    cooldownTimeoutRef.current = window.setTimeout(() => {
       setIsChatCoolingDown(false)
+      cooldownTimeoutRef.current = null
     }, 600)
 
     // Close the emoji picker.
@@ -135,7 +149,6 @@ function ChatBar({ room, isDisabled }: ChatBarProps) {
           aria-label="Emojis"
           title="Emojis"
           onClick={() => setIsEmojiPickerOpen((open) => !open)}
-          disabled={!room}
         >
           <Smile size={20} />
         </button>
@@ -173,7 +186,6 @@ function ChatBar({ room, isDisabled }: ChatBarProps) {
           }
         }}
         maxLength={100}
-        disabled={!room}
       />
 
       {/* Send button */}
@@ -181,7 +193,7 @@ function ChatBar({ room, isDisabled }: ChatBarProps) {
         type="button"
         className="chat-action send-button"
         onClick={sendMessage}
-        disabled={!room || !chatInput.trim() || isChatCoolingDown}
+        disabled={!chatInput.trim() || isChatCoolingDown}
       >
         <Send size={18} />
       </button>

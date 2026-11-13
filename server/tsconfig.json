@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
+    "rootDir": ".",
     "outDir": "build",
     "target": "ESNext",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "strict": true,
     "allowJs": true,
-    "strictNullChecks": false,
     "esModuleInterop": true,
     "experimentalDecorators": true,
     "skipLibCheck": true,

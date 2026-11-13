@@ -8,46 +8,30 @@ import {
   matchMaker,
 } from 'colyseus'
 
-/**
- * Import your Room files
- */
-import { MyRoom } from './rooms/MyRoom.js'
+import { GameRoom } from './rooms/GameRoom.js'
 
 const server = defineServer({
-  /**
-   * Define your room handlers:
-   */
   rooms: {
-    town_square: defineRoom(MyRoom),
+    main_room: defineRoom(GameRoom),
   },
 
   beforeListen: async () => {
     // Wait until the Colyseus matchmaker is initialized.
     await matchMaker.onReady
 
-    // Create the Town Square when the server starts.
-    await matchMaker.createRoom('town_square', {})
+    // Create the main room when the server starts.
+    await matchMaker.createRoom('main_room', {})
 
     console.log('Town Square is ready.')
   },
 
-  /**
-   * Experimental: Define API routes. Built-in integration with the "playground" and SDK.
-   *
-   * Usage from SDK:
-   *   client.http.get("/api/hello").then((response) => {})
-   *
-   */
   routes: createRouter({
-    api_hello: createEndpoint('/api/hello', { method: 'GET' }, async (ctx) => {
-      return { message: 'Hello World' }
-    }),
-    api_town_status: createEndpoint(
-      '/api/town-status',
+    api_room_status: createEndpoint(
+      '/api/room-status',
       { method: 'GET' },
       async () => {
-        // Find all active Town Square rooms.
-        const rooms = await matchMaker.query({ name: 'town_square' })
+        // Find all active main rooms.
+        const rooms = await matchMaker.query({ name: 'main_room' })
 
         // Add up the number of connected players.
         const playerCount = rooms.reduce(
@@ -63,15 +47,7 @@ const server = defineServer({
     ),
   }),
 
-  /**
-   * Bind your custom express routes here:
-   * Read more: https://expressjs.com/en/starter/basic-routing.html
-   */
   express: (app) => {
-    app.get('/hi', (req, res) => {
-      res.send("It's time to kick ass and chew bubblegum!")
-    })
-
     /**
      * Use @colyseus/monitor
      * If you expose it in production, make sure to protect it with a password:
@@ -79,13 +55,6 @@ const server = defineServer({
      */
     if (process.env.NODE_ENV !== 'production') {
       app.use('/monitor', monitor())
-    }
-
-    /**
-     * Use @colyseus/playground
-     * (It is not recommended to expose this route in a production environment)
-     */
-    if (process.env.NODE_ENV !== 'production') {
       app.use('/', playground())
     }
   },

@@ -11,7 +11,7 @@ export interface PlayerState {
 }
 
 // Defines the shared state of a multiplayer room.
-export interface MyRoomState {
+export interface GameRoomState {
   players: MapSchema<PlayerState>
 }
 
@@ -37,4 +37,10 @@ export interface NotificationMessage {
   startAt: number
   expiresAt: number
   serverNow: number
+}
+
+// Represents a notification displayed in the game interface.
+export interface Notification {
+  id: number
+  message: string
 }

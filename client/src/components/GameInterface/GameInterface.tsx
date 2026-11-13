@@ -10,6 +10,7 @@ import CharacterSelection from '../CharacterSelection/CharacterSelection'
 import ConnectionOverlay from '../ConnectionOverlay'
 import ChatBar from '../ChatBar'
 import useScaledStage from '../../hooks/useScaledStage'
+import type { Notification } from '../../game/types'
 import './GameInterface.css'
 
 // Lazy-load the Phaser game component.
@@ -24,12 +25,7 @@ type ChatBarProps = ComponentProps<typeof ChatBar>
 // Define the props required by the shared game interface.
 interface GameInterfaceProps {
   room: ChatBarProps['room'] | null
-  notifications: {
-    id: number
-    message: string
-    startAt: number
-    expiresAt: number
-  }[]
+  notifications: Notification[]
   characterType: CharacterSelectionProps['characterType']
   setCharacterType: CharacterSelectionProps['setCharacterType']
   displayName: CharacterSelectionProps['displayName']

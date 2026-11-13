@@ -12,7 +12,7 @@ export function createPlayerCharacter(
   showName: boolean = true,
   isLocalPlayer: boolean = false,
 ) {
-  // Create placeholder human character
+  // Create the player character.
   const player = scene.add.container(x, y)
 
   // Create a subtle shadow beneath the character.
@@ -30,11 +30,11 @@ export function createPlayerCharacter(
   const arms = scene.add.container(0, 0).setName('arms')
   const legs = scene.add.container(0, 0).setName('legs')
 
-  const leftArm = scene.add.graphics() as Phaser.GameObjects.Graphics
-  const rightArm = scene.add.graphics() as Phaser.GameObjects.Graphics
+  const leftArm = scene.add.graphics()
+  const rightArm = scene.add.graphics()
 
-  const leftLeg = scene.add.graphics() as Phaser.GameObjects.Graphics
-  const rightLeg = scene.add.graphics() as Phaser.GameObjects.Graphics
+  const leftLeg = scene.add.graphics()
+  const rightLeg = scene.add.graphics()
 
   // Draw the left leg.
   leftLeg.fillStyle(0x26384b)
@@ -108,7 +108,7 @@ export function createPlayerCharacter(
     body.fillEllipse(0, -42, 46, 58)
   }
 
-  // Body and outfit.
+  // Draw the body and outfit.
   if (characterType === 'boy') {
     body.fillStyle(0x3979b8)
     body.fillRoundedRect(-11, -27, 22, 29, 8)
@@ -127,20 +127,20 @@ export function createPlayerCharacter(
     body.fillTriangle(-5, -26, 5, -26, 0, -20)
   }
 
-  // Neck
+  // Draw the neck.
   body.fillStyle(0xe8b18b)
   body.fillRoundedRect(-5, -34, 10, 10, 3)
 
-  // Ears
+  // Draw the ears.
   body.fillStyle(0xe8b18b)
   body.fillCircle(-19, -45, 5)
   body.fillCircle(19, -45, 5)
 
-  // Oversized head
+  // Draw the head.
   body.fillStyle(0xe8b18b)
   body.fillCircle(0, -48, 22)
 
-  // Hair
+  // Draw the hair.
   body.fillStyle(0x38251b)
 
   if (characterType === 'boy') {
@@ -179,7 +179,7 @@ export function createPlayerCharacter(
     body.fillCircle(12, -57, 2)
   }
 
-  // Eyes
+  // Draw the eyes.
   body.fillStyle(0xffffff)
   body.fillEllipse(-8, -46, 8, 11)
   body.fillEllipse(8, -46, 8, 11)
@@ -188,23 +188,28 @@ export function createPlayerCharacter(
   body.fillCircle(-8, -45, 3)
   body.fillCircle(8, -45, 3)
 
-  // Eye highlights
+  // Add eye highlights.
   body.fillStyle(0xffffff)
   body.fillCircle(-9, -47, 1.5)
   body.fillCircle(7, -47, 1.5)
 
-  // Blush
+  // Add blush.
   body.fillStyle(0xe98b83, 0.6)
   body.fillEllipse(-14, -37, 7, 4)
   body.fillEllipse(14, -37, 7, 4)
 
-  // Small smile
+  // Draw a small smile.
   body.lineStyle(1.5, 0x8c493c)
   body.beginPath()
   body.arc(0, -36, 3, 0.2, Math.PI - 0.2, false)
   body.strokePath()
 
-  // Display the player's name above their character.
+  // Align the character's feet with the container's ground position.
+  legs.setY(-18)
+  body.setY(-18)
+  arms.setY(-18)
+
+  // Add the player's name below their character.
   if (showName) {
     const nameLabel = scene.add.text(0, 15, name, {
       fontFamily: 'Arial',
@@ -226,18 +231,9 @@ export function createPlayerCharacter(
     // Center the name label below the character.
     nameLabel.setOrigin(0.5, 0.5)
 
-    // Align the character's feet with the container's ground position.
-    legs.setY(-18)
-    body.setY(-18)
-    arms.setY(-18)
-
     // Assemble the player character.
     player.add([shadow, legs, body, arms, nameLabel])
   } else {
-    legs.setY(-18)
-    body.setY(-18)
-    arms.setY(-18)
-
     player.add([shadow, legs, body, arms])
   }
 
@@ -256,14 +252,31 @@ export function startWalkingAnimation(
   scene: Phaser.Scene,
   character: Phaser.GameObjects.Container,
 ) {
-  const legs = character.getByName('legs') as Phaser.GameObjects.Container
-  const arms = character.getByName('arms') as Phaser.GameObjects.Container
+  const legs = character.getByName('legs')
+  const arms = character.getByName('arms')
 
-  const leftLeg = legs.getAt(0) as Phaser.GameObjects.Graphics
-  const rightLeg = legs.getAt(1) as Phaser.GameObjects.Graphics
+  // Stop if the limb containers are unavailable.
+  if (
+    !(legs instanceof Phaser.GameObjects.Container) ||
+    !(arms instanceof Phaser.GameObjects.Container)
+  ) {
+    return
+  }
 
-  const leftArm = arms.getAt(0) as Phaser.GameObjects.Graphics
-  const rightArm = arms.getAt(1) as Phaser.GameObjects.Graphics
+  const leftLeg = legs.getAt(0)
+  const rightLeg = legs.getAt(1)
+  const leftArm = arms.getAt(0)
+  const rightArm = arms.getAt(1)
+
+  // Stop if any individual limb is unavailable.
+  if (
+    !(leftLeg instanceof Phaser.GameObjects.Graphics) ||
+    !(rightLeg instanceof Phaser.GameObjects.Graphics) ||
+    !(leftArm instanceof Phaser.GameObjects.Graphics) ||
+    !(rightArm instanceof Phaser.GameObjects.Graphics)
+  ) {
+    return
+  }
 
   // Stop any previous limb animations.
   scene.tweens.killTweensOf([leftLeg, rightLeg, leftArm, rightArm])

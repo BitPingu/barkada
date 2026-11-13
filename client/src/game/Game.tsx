@@ -1,18 +1,15 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Phaser from 'phaser'
 import type { Room } from '@colyseus/sdk'
-import type { MyRoomState } from './types'
-import TownScene from './scenes/TownScene'
+import type { GameRoomState, Notification } from './types'
+import RoomScene from './scenes/RoomScene'
 import type { CharacterType } from './objects/PlayerCharacter'
 import { MousePointerClick } from 'lucide-react'
 
 // Defines the props passed from React.
 interface GameProps {
-  room: Room<MyRoomState> // require Colyseus room
-  notifications: {
-    id: number
-    message: string
-  }[]
+  room: Room<GameRoomState>
+  notifications: Notification[]
   characterType: CharacterType
   displayName: string
   onReady: () => void
@@ -26,7 +23,7 @@ export default function Game({
   displayName,
   onReady,
 }: GameProps) {
-  // Reference to div.
+  // References the container for the Phaser canvas.
   const gameRef = useRef<HTMLDivElement>(null)
 
   // Tracks the notification stack container.
@@ -112,45 +109,45 @@ export default function Game({
     }
   }, [])
 
-  // Runs after rendering.
+  // Initialize the Phaser game.
   useEffect(() => {
     if (!gameRef.current) return
 
     let active = true
 
-    // Create Phaser game instance on a canvas.
+    // Create the Phaser game instance.
     const game = new Phaser.Game({
-      type: Phaser.AUTO, // rendering method
+      type: Phaser.AUTO,
       width: 960,
       height: 540,
-      parent: gameRef.current, // HTML element to contain the canvas
+      parent: gameRef.current,
       backgroundColor: '#ccecff',
       antialias: true,
-      scene: [], // scenes to load
+      scene: [],
       scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
       },
     })
 
-    // Start the town scene once Phaser is ready.
+    // Start the room scene once Phaser is ready.
     game.events.once(Phaser.Core.Events.READY, () => {
       if (!active) return
 
-      // Register the town scene without starting it.
-      game.scene.add('TownScene', TownScene, false)
+      // Register the room scene without starting it.
+      game.scene.add('RoomScene', RoomScene, false)
 
-      const townScene = game.scene.getScene('TownScene')
+      const roomScene = game.scene.getScene('RoomScene')
 
-      // Wait until the town has finished creating.
-      townScene.events.once(Phaser.Scenes.Events.CREATE, () => {
+      // Wait until the room scene has finished creating.
+      roomScene.events.once(Phaser.Scenes.Events.CREATE, () => {
         if (active) {
           onReady()
         }
       })
 
-      // Start the town scene.
-      game.scene.start('TownScene', {
+      // Start the room scene.
+      game.scene.start('RoomScene', {
         room,
         characterType,
         displayName,
@@ -160,15 +157,14 @@ export default function Game({
       })
     })
 
-    // Clean up.
+    // Clean up the Phaser game instance.
     return () => {
       active = false
       game.destroy(true)
-      game.canvas?.remove()
     }
   }, [room, characterType, displayName, onReady])
 
-  // HTML element Phaser uses as parent
+  // Renders the Phaser canvas and game interface.
   return (
     <div ref={gameRef} className="game-canvas-container">
       {/* Display active game notifications. */}

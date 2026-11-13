@@ -9,11 +9,13 @@ interface CharacterPreviewProps {
   characterType: CharacterType
 }
 
+// Renders a Phaser character preview for the selected character type.
 export default function CharacterPreview({
   characterType,
 }: CharacterPreviewProps) {
   const previewRef = useRef<HTMLDivElement>(null)
 
+  // Initialize the Phaser preview and recreate it when the character type changes.
   useEffect(() => {
     if (!previewRef.current) return
 
@@ -39,9 +41,9 @@ export default function CharacterPreview({
       },
     })
 
+    // Destroy the Phaser instance when the preview is removed or updated.
     return () => {
       game.destroy(true)
-      game.canvas?.remove()
     }
   }, [characterType])
 

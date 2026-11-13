@@ -2,7 +2,7 @@
   "private": true,
   "name": "server",
   "version": "0.1.0",
-  "description": "A Colyseus multiplayer server",
+  "description": "The multiplayer server for Barkada",
   "type": "module",
   "main": "build/index.js",
   "engines": {
@@ -11,16 +11,15 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "node build/index.js",
-    "loadtest": "tsx loadtest/example.ts --room town_square --numClients 2",
+    "loadtest": "tsx loadtest/example.ts --room main_room --numClients 2",
     "build": "npm run clean && tsc -p tsconfig.build.json",
     "clean": "rimraf build",
     "test": "mocha -r tsx test/**.test.ts --exit --timeout 15000"
   },
-  "author": "",
+  "author": "BitPingu",
   "license": "UNLICENSED",
   "devDependencies": {
     "@colyseus/loadtest": "^0.18.1",
-    "@colyseus/sdk": "^0.18.1",
     "@colyseus/testing": "^0.18.5",
     "@types/express": "^5.0.6",
     "@types/mocha": "^10.0.1",
