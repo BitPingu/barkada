@@ -82,8 +82,8 @@ export default function Game({
           { transform: 'translateY(0)' },
         ],
         {
-          duration: 500,
-          easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+          duration: 300,
+          easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
         },
       )
 

@@ -1,12 +1,13 @@
 import type { CSSProperties } from 'react'
 import type { Room } from '@colyseus/sdk'
-import { LogOut, Users } from 'lucide-react'
+import { LogOut, User, Users } from 'lucide-react'
 import './GameHeader.css'
 
 // Define the props required by the game header.
 type GameHeaderProps = {
   roomName: string | null
   playerCount: number | null
+  displayName: string
   isReconnecting: boolean
   isDisconnected: boolean
   isServerOnline: boolean | null
@@ -18,6 +19,7 @@ type GameHeaderProps = {
 function GameHeader({
   roomName,
   playerCount,
+  displayName,
   isReconnecting,
   isDisconnected,
   isServerOnline,
@@ -78,10 +80,20 @@ function GameHeader({
       </div>
 
       <div className="header-bottom-row">
-        {/* Display the current server and room connection status. */}
-        <div className={`connection-status ${connectionStatus}`}>
-          <span className={`status-dot ${connectionStatus}`} />
-          <span>{statusLabel}</span>
+        <div className="header-status-group">
+          {/* Display the current server and room connection status. */}
+          <div className={`connection-status ${connectionStatus}`}>
+            <span className={`status-dot ${connectionStatus}`} />
+            <span>{statusLabel}</span>
+          </div>
+
+          {/* Show the player's display name once they enter the game. */}
+          {room && displayName && (
+            <div className="player-info">
+              <User size={14} />
+              <span>{displayName}</span>
+            </div>
+          )}
         </div>
 
         {/* Show room information only when both values are available. */}

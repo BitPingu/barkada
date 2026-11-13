@@ -52,6 +52,7 @@ function App() {
       <GameHeader
         roomName={roomName}
         playerCount={playerCount}
+        displayName={displayName}
         isReconnecting={isReconnecting}
         isDisconnected={isDisconnected}
         isServerOnline={isServerOnline}
