@@ -31,6 +31,7 @@ interface GameInterfaceProps {
   displayName: CharacterSelectionProps['displayName']
   setDisplayName: CharacterSelectionProps['setDisplayName']
   isJoining: CharacterSelectionProps['isJoining']
+  canJoin: boolean
   joinError: CharacterSelectionProps['joinError']
   onJoin: CharacterSelectionProps['onJoin']
   isReconnecting: ConnectionOverlayProps['isReconnecting']
@@ -49,6 +50,7 @@ function GameInterface({
   displayName,
   setDisplayName,
   isJoining,
+  canJoin,
   joinError,
   onJoin,
   isReconnecting,
@@ -154,6 +156,7 @@ function GameInterface({
               displayName={displayName}
               setDisplayName={setDisplayName}
               isJoining={isJoining}
+              canJoin={canJoin}
               joinError={joinError}
               onJoin={onJoin}
             />

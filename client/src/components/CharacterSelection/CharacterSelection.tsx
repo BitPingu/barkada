@@ -10,6 +10,7 @@ type CharacterSelectionProps = {
   displayName: string
   setDisplayName: (name: string) => void
   isJoining: boolean
+  canJoin: boolean
   joinError: string | null
   onJoin: () => void
 }
@@ -20,6 +21,7 @@ function CharacterSelection({
   displayName,
   setDisplayName,
   isJoining,
+  canJoin,
   joinError,
   onJoin,
 }: CharacterSelectionProps) {
@@ -114,7 +116,9 @@ function CharacterSelection({
               type="button"
               className="join-button"
               onClick={onJoin}
-              disabled={!characterType || !displayName.trim() || isJoining}
+              disabled={
+                !canJoin || !characterType || !displayName.trim() || isJoining
+              }
             >
               {isJoining ? 'Joining...' : 'Join Game'}
             </button>

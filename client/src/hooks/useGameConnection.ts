@@ -168,6 +168,12 @@ function useGameConnection() {
     // Clear any previous join error.
     setJoinError(null)
 
+    // Prevent joining while the server is unavailable.
+    if (!isServerOnline) {
+      setJoinError('The server is currently unavailable. Please try again.')
+      return
+    }
+
     if (!characterType || isJoining) return
 
     const trimmedDisplayName = displayName.trim()

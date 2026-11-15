@@ -78,6 +78,7 @@ function App() {
         displayName={displayName}
         setDisplayName={setDisplayName}
         isJoining={isJoining}
+        canJoin={isServerOnline === true}
         joinError={joinError}
         onJoin={joinGame}
         isReconnecting={isReconnecting}
