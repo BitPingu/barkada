@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import GameHeader from './components/GameHeader/GameHeader'
 import GameInterface from './components/GameInterface/GameInterface'
-import LeaveGameDialog from './components/LeaveGameDialog/LeaveGameDialog'
-import SessionExpiredDialog from './components/SessionExpiredDialog/SessionExpiredDialog'
 import useGameConnection from './hooks/useGameConnection'
 import './App.css'
 
@@ -35,6 +33,10 @@ function App() {
   // Track the scale of the game interface for responsive header sizing.
   const [interfaceScale, setInterfaceScale] = useState(1)
 
+  // Check whether the leave game dialog should be displayed.
+  const shouldShowLeaveDialog =
+    isLeaveDialogOpen && !isDisconnected && !connectionError
+
   // Open the leave game confirmation dialog.
   function handleLeaveGame() {
     setIsLeaveDialogOpen(true)
@@ -61,14 +63,6 @@ function App() {
         onLeaveGame={handleLeaveGame}
       />
 
-      {/* Leave game confirmation dialog. */}
-      {isLeaveDialogOpen && (
-        <LeaveGameDialog
-          onConfirm={handleConfirmLeaveGame}
-          onCancel={() => setIsLeaveDialogOpen(false)}
-        />
-      )}
-
       {/* Shared game interface for character selection and gameplay. */}
       <GameInterface
         room={room}
@@ -82,19 +76,14 @@ function App() {
         joinError={joinError}
         onJoin={joinGame}
         isReconnecting={isReconnecting}
+        isLeaveDialogOpen={shouldShowLeaveDialog}
+        onConfirmLeaveGame={handleConfirmLeaveGame}
+        onCancelLeaveGame={() => setIsLeaveDialogOpen(false)}
         connectionError={connectionError}
         roomName={roomName}
         onReturn={returnToCharacterSelection}
         onScaleChange={setInterfaceScale}
       />
-
-      {/* Display the session-expired dialog during reconnection recovery. */}
-      {!room && connectionError && (
-        <SessionExpiredDialog
-          message={connectionError}
-          onContinue={returnToCharacterSelection}
-        />
-      )}
     </main>
   )
 }

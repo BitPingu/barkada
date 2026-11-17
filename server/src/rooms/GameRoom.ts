@@ -30,6 +30,18 @@ export type ChatHistoryMessage = {
 // Maximum number of chat messages retained in room history.
 const MAX_CHAT_HISTORY = 100
 
+// Time before an inactivity warning is sent.
+const INACTIVITY_WARNING_MS = 1 * 60 * 1000
+
+// Time before an inactive player is disconnected.
+const INACTIVITY_TIMEOUT_MS = 2 * 60 * 1000
+
+// Frequency of inactivity checks.
+const INACTIVITY_CHECK_INTERVAL_MS = 1000
+
+// Custom close code for inactivity disconnections.
+const INACTIVITY_DISCONNECT_CODE = 4020
+
 export class GameRoom extends Room<{ state: GameRoomState }> {
   // Maximum number of players allowed in one room.
   maxClients = 20
@@ -39,6 +51,12 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
 
   // Tracks the last time each player sent a chat message.
   private lastChatMessage = new Map<string, number>()
+
+  // Tracks the last recorded activity time for each player.
+  private lastActivity = new Map<string, number>()
+
+  // Tracks players who have already received an inactivity warning.
+  private warnedInactive = new Set<string>()
 
   // Stores recent chat messages for the current room session.
   private chatHistory: ChatHistoryMessage[] = []
@@ -75,11 +93,62 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
     )
   }
 
+  // Reset a player's inactivity timer after confirming they are still present.
+  private resetInactivityTimer(client: Client) {
+    const sessionId = client.sessionId
+
+    // Ignore clients that don't have an active player entry.
+    if (!this.state.players.has(sessionId)) {
+      return
+    }
+
+    // Reset the player's inactivity timestamp.
+    this.lastActivity.set(sessionId, Date.now())
+
+    // Dismiss the warning if the player had received one.
+    if (this.warnedInactive.delete(sessionId)) {
+      client.send('inactivity-reset')
+    }
+  }
+
   onCreate() {
     // Keep the room available when everyone leaves.
     this.autoDispose = false
 
     console.log('Room created:', this.roomId)
+
+    // Check connected players for inactivity.
+    this.clock.setInterval(() => {
+      const now = Date.now()
+
+      // Only check currently connected clients.
+      for (const client of this.clients) {
+        const sessionId = client.sessionId
+        const lastActivityAt = this.lastActivity.get(sessionId)
+
+        // Skip clients without a recorded activity timestamp.
+        if (lastActivityAt === undefined) {
+          continue
+        }
+
+        const inactiveDuration = now - lastActivityAt
+
+        // Disconnect players who exceed the inactivity timeout.
+        if (inactiveDuration >= INACTIVITY_TIMEOUT_MS) {
+          client.leave(INACTIVITY_DISCONNECT_CODE)
+          continue
+        }
+
+        // Warn players once they reach the warning threshold.
+        if (
+          inactiveDuration >= INACTIVITY_WARNING_MS &&
+          !this.warnedInactive.has(sessionId)
+        ) {
+          this.warnedInactive.add(sessionId)
+          client.send('inactivity-warning')
+        }
+      }
+    }, INACTIVITY_CHECK_INTERVAL_MS)
 
     // Respond to client clock synchronization requests.
     this.onMessage('time-sync', (client, message: { clientSentAt: number }) => {
@@ -118,6 +187,9 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
         return
       }
 
+      // Reset the player's inactivity timer after valid movement.
+      this.resetInactivityTimer(client)
+
       // Clamp coordinates to the game boundaries.
       player.x = Math.max(25, Math.min(935, message.x))
       player.y = Math.max(170, Math.min(520, message.y))
@@ -148,6 +220,9 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
       if (now - lastMessage < 500) {
         return
       }
+
+      // Reset the player's inactivity timer after sending a valid message.
+      this.resetInactivityTimer(client)
 
       // Update the player's last message timestamp.
       this.lastChatMessage.set(client.sessionId, now)
@@ -214,6 +289,9 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
         return
       }
 
+      // Reset the player's inactivity timer after sending a valid message.
+      this.resetInactivityTimer(client)
+
       // Update the player's last message timestamp.
       this.lastChatMessage.set(client.sessionId, now)
 
@@ -224,6 +302,16 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
         emoji: message.emoji,
         expiresAt: now + 5000,
       })
+    })
+
+    // Handle player interactions that indicate activity.
+    this.onMessage('activity', (client) => {
+      this.resetInactivityTimer(client)
+    })
+
+    // Handle confirmation that a player is still present.
+    this.onMessage('inactivity-confirm', (client) => {
+      this.resetInactivityTimer(client)
     })
   }
 
@@ -266,6 +354,9 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
     // Add the player to the synchronized room state.
     this.state.players.set(client.sessionId, player)
 
+    // Initialize the player's inactivity timer.
+    this.resetInactivityTimer(client)
+
     // Add a player join event to room history.
     this.addChatHistoryMessage(
       {
@@ -293,8 +384,19 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
       code,
     )
 
-    // Allow the player 60 seconds to reconnect.
-    this.allowReconnection(client, 60)
+    // Create a reconnection reservation for the disconnected player.
+    const reconnection = this.allowReconnection(client, 60)
+
+    // Immediately reject reconnection for players disconnected due to inactivity.
+    if (code === (INACTIVITY_DISCONNECT_CODE as CloseCode)) {
+      // Handle the expected rejection without logging a failed reconnection.
+      reconnection.catch(() => {})
+      reconnection.reject()
+      return
+    }
+
+    // Log successful reconnections.
+    reconnection
       .then((reconnectedClient) => {
         console.log(
           new Date().toISOString(),
@@ -309,6 +411,14 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
           'failed to reconnect.',
         )
       })
+  }
+
+  // When a player successfully reconnects.
+  onReconnect(client: Client) {
+    // Reset the inactivity timer after reconnecting.
+    this.resetInactivityTimer(client)
+
+    console.log(client.sessionId, 'reconnected!')
   }
 
   // When a player leaves.
@@ -335,6 +445,10 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
 
     // Remove the player's chat cooldown when they leave.
     this.lastChatMessage.delete(client.sessionId)
+
+    // Remove the player's inactivity tracking when they leave.
+    this.lastActivity.delete(client.sessionId)
+    this.warnedInactive.delete(client.sessionId)
 
     // Clear chat history when the room becomes empty.
     if (this.state.players.size === 0) {

@@ -139,6 +139,8 @@
   white-space: nowrap;
   box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
   animation: notification-fade 3s cubic-bezier(0.22, 1, 0.36, 1) both;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* Fade the notification in and out. */
@@ -177,6 +179,8 @@
   box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
   transform: translateX(-50%);
   pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .movement-hint-icon {

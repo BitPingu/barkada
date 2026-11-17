@@ -7,6 +7,9 @@ import useNotifications from './useNotifications'
 import useSessionRecovery from './useSessionRecovery'
 import useRoomStatus from './useRoomStatus'
 
+// Custom close code used when a player is disconnected due to inactivity.
+const INACTIVITY_DISCONNECT_CODE = 4020
+
 function useGameConnection() {
   // Manage notifications received from the room.
   const { notifications, addNotification, clearNotifications } =
@@ -98,6 +101,11 @@ function useGameConnection() {
         // Ignore events from connections that are no longer active.
         if (roomRef.current !== connection) return
 
+        // Handle inactivity disconnections without attempting to reconnect.
+        if (code === INACTIVITY_DISCONNECT_CODE) {
+          return
+        }
+
         console.warn('Connection dropped:', code, reason)
         setIsDisconnected(true)
         setIsReconnecting(true)
@@ -126,7 +134,7 @@ function useGameConnection() {
         // Ignore events from connections that are no longer active.
         if (roomRef.current !== connection) return
 
-        console.warn('Left room:', code, reason)
+        console.log('Left room:', { code, reason })
 
         roomRef.current = null
         clearNotifications()
@@ -138,7 +146,13 @@ function useGameConnection() {
         sessionStorage.removeItem('barkada-character-type')
 
         setIsReconnecting(false)
-        setConnectionError("You've lost your connection to the game.")
+
+        // Display an appropriate message based on why the player left.
+        setConnectionError(
+          code === INACTIVITY_DISCONNECT_CODE
+            ? 'You were disconnected due to inactivity.'
+            : "You've lost your connection to the game.",
+        )
       })
 
       // Update the count whenever the room state changes.

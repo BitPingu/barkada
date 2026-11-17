@@ -1,12 +1,5 @@
 .leave-game-dialog-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-  border-radius: 0;
-}
-
-.leave-game-dialog-overlay .game-dialog {
-  transform: translateY(-40px);
+  z-index: 10;
 }
 
 /* Leave game dialog */
@@ -29,10 +22,6 @@
   /* Leave Game dialog */
   .leave-game-dialog h2 {
     font-size: 20px;
-  }
-
-  .leave-game-dialog-overlay .game-dialog {
-    transform: translateY(-20px);
   }
 
   .leave-game-dialog .game-dialog-button {

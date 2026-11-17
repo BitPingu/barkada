@@ -11,6 +11,7 @@
 }
 
 .game-dialog {
+  transform: translateY(-40px);
   width: 340px;
   max-width: calc(100% - 32px);
   padding: 24px;
@@ -52,4 +53,11 @@
 
 .game-dialog-button:hover {
   background: #2d65a9;
+}
+
+/* Mobile landscape */
+@media (orientation: landscape) and (max-height: 600px) {
+  .game-dialog {
+    transform: translateY(-20px);
+  }
 }

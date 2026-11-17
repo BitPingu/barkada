@@ -8,6 +8,9 @@ import {
 } from 'react'
 import CharacterSelection from '../CharacterSelection/CharacterSelection'
 import ConnectionOverlay from '../ConnectionOverlay/ConnectionOverlay'
+import InactivityOverlay from '../InactivityOverlay/InactivityOverlay'
+import LeaveGameDialog from '../LeaveGameDialog/LeaveGameDialog'
+import SessionExpiredDialog from '../SessionExpiredDialog/SessionExpiredDialog'
 import ChatBar from '../ChatBar/ChatBar'
 import ChatHistory from '../ChatHistory/ChatHistory'
 import useScaledStage from '../../hooks/useScaledStage'
@@ -37,6 +40,9 @@ interface GameInterfaceProps {
   joinError: CharacterSelectionProps['joinError']
   onJoin: CharacterSelectionProps['onJoin']
   isReconnecting: ConnectionOverlayProps['isReconnecting']
+  isLeaveDialogOpen: boolean
+  onConfirmLeaveGame: () => void
+  onCancelLeaveGame: () => void
   connectionError: ConnectionOverlayProps['connectionError']
   roomName: string | null
   onReturn: ConnectionOverlayProps['onReturn']
@@ -56,6 +62,9 @@ function GameInterface({
   joinError,
   onJoin,
   isReconnecting,
+  isLeaveDialogOpen,
+  onConfirmLeaveGame,
+  onCancelLeaveGame,
   connectionError,
   roomName,
   onReturn,
@@ -66,6 +75,15 @@ function GameInterface({
 
   // Stores the recent chat messages received from the server.
   const [chatMessages, setChatMessages] = useState<ChatHistoryMessage[]>([])
+
+  // Tracks which room has an active inactivity warning.
+  const [inactivityWarningRoomId, setInactivityWarningRoomId] = useState<
+    string | null
+  >(null)
+
+  // Check whether the current room has an active inactivity warning.
+  const isInactivityWarning =
+    room !== null && inactivityWarningRoomId === room.sessionId
 
   // Tracks which room has its chat history panel open.
   const [chatHistoryRoomId, setChatHistoryRoomId] = useState<string | null>(
@@ -114,6 +132,35 @@ function GameInterface({
       unsubscribeHistory()
       unsubscribeHistoryUpdate()
     }
+  }, [room])
+
+  // Listen for inactivity warnings and resets from the server.
+  useEffect(() => {
+    if (!room) {
+      return
+    }
+
+    // Display the inactivity warning.
+    const unsubscribeWarning = room.onMessage('inactivity-warning', () => {
+      setInactivityWarningRoomId(room.sessionId)
+    })
+
+    // Hide the warning when the player becomes active again.
+    const unsubscribeReset = room.onMessage('inactivity-reset', () => {
+      setInactivityWarningRoomId(null)
+    })
+
+    // Remove listeners when the room changes or the component unmounts.
+    return () => {
+      unsubscribeWarning()
+      unsubscribeReset()
+    }
+  }, [room])
+
+  // Confirm that the player is still present.
+  const handleInactivityConfirm = useCallback(() => {
+    // Notify the server that the player wants to remain in the game.
+    room?.send('inactivity-confirm')
   }, [room])
 
   // Notify the interface when the game has finished initializing.
@@ -180,6 +227,9 @@ function GameInterface({
                     title="Chat history"
                     onClick={() => {
                       if (room) {
+                        // Notify the server that the player interacted with chat history.
+                        room.send('activity')
+
                         setChatHistoryRoomId(
                           isChatHistoryOpen ? null : room.sessionId,
                         )
@@ -254,6 +304,30 @@ function GameInterface({
             onReturn={onReturn}
           />
         )}
+
+        {/* Display the leave game confirmation dialog during gameplay. */}
+        {room && isLeaveDialogOpen && !isDialogueOpen && (
+          <LeaveGameDialog
+            onConfirm={onConfirmLeaveGame}
+            onCancel={onCancelLeaveGame}
+          />
+        )}
+
+        {/* Display the session-expired dialog after losing the connection. */}
+        {!room && connectionError && (
+          <SessionExpiredDialog
+            message={connectionError}
+            onContinue={onReturn}
+          />
+        )}
+
+        {/* Display the inactivity confirmation dialog during gameplay. */}
+        {room &&
+          isInactivityWarning &&
+          !isDialogueOpen &&
+          !isLeaveDialogOpen && (
+            <InactivityOverlay onConfirm={handleInactivityConfirm} />
+          )}
       </div>
     </div>
   )

@@ -29,8 +29,11 @@ function ChatBar({ room, isDisabled }: ChatBarProps) {
   // Store the message currently being typed.
   const [chatInput, setChatInput] = useState('')
 
-  // Tracks whether the chat is currently on cooldown.
-  const [isChatCoolingDown, setIsChatCoolingDown] = useState(false)
+  // Tracks which room is currently on chat cooldown.
+  const [cooldownRoom, setCooldownRoom] = useState<Room | null>(null)
+
+  // Check whether the current room is on chat cooldown.
+  const isChatCoolingDown = cooldownRoom === room
 
   // Tracks whether the emoji picker is visible.
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false)
@@ -47,9 +50,13 @@ function ChatBar({ room, isDisabled }: ChatBarProps) {
     function handleClickOutside(event: MouseEvent) {
       // Check whether the click happened outside the emoji controls.
       if (
+        isEmojiPickerOpen &&
         emojiPickerRef.current &&
         !emojiPickerRef.current.contains(event.target as Node)
       ) {
+        // Notify the server that the player interacted with the emoji picker.
+        room.send('activity')
+
         // Close the emoji picker.
         setIsEmojiPickerOpen(false)
       }
@@ -62,13 +69,17 @@ function ChatBar({ room, isDisabled }: ChatBarProps) {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [])
+  }, [isEmojiPickerOpen, room])
 
   // Close the emoji picker when pressing Escape.
   useEffect(() => {
     // Handle keyboard input.
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && isEmojiPickerOpen) {
+        // Notify the server that the player interacted with the emoji picker.
+        room.send('activity')
+
+        // Close the emoji picker.
         setIsEmojiPickerOpen(false)
       }
     }
@@ -80,7 +91,7 @@ function ChatBar({ room, isDisabled }: ChatBarProps) {
     return () => {
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [])
+  }, [isEmojiPickerOpen, room])
 
   // Clear the cooldown timeout when the component unmounts.
   useEffect(() => {
@@ -90,6 +101,26 @@ function ChatBar({ room, isDisabled }: ChatBarProps) {
       }
     }
   }, [])
+
+  // Notify the server that the player interacted with the interface.
+  function reportActivity() {
+    room.send('activity')
+  }
+
+  // Activate the chat cooldown and re-enable chat after 0.6 seconds.
+  function startChatCooldown() {
+    // Clear any existing cooldown timeout.
+    if (cooldownTimeoutRef.current !== null) {
+      window.clearTimeout(cooldownTimeoutRef.current)
+    }
+
+    setCooldownRoom(room)
+
+    cooldownTimeoutRef.current = window.setTimeout(() => {
+      setCooldownRoom(null)
+      cooldownTimeoutRef.current = null
+    }, 600)
+  }
 
   // Send a chat message to the server.
   function sendMessage() {
@@ -103,14 +134,8 @@ function ChatBar({ room, isDisabled }: ChatBarProps) {
     // Send the message to the Colyseus room.
     room.send('chat', { text })
 
-    // Activate the chat cooldown.
-    setIsChatCoolingDown(true)
-
-    // Re-enable chat after 0.6 seconds.
-    cooldownTimeoutRef.current = window.setTimeout(() => {
-      setIsChatCoolingDown(false)
-      cooldownTimeoutRef.current = null
-    }, 600)
+    // Start the chat cooldown.
+    startChatCooldown()
 
     // Clear the input after sending.
     setChatInput('')
@@ -126,14 +151,8 @@ function ChatBar({ room, isDisabled }: ChatBarProps) {
     // Send the selected emoji to the server.
     room.send('emoji', { emoji })
 
-    // Activate the chat cooldown.
-    setIsChatCoolingDown(true)
-
-    // Re-enable chat after 0.6 seconds.
-    cooldownTimeoutRef.current = window.setTimeout(() => {
-      setIsChatCoolingDown(false)
-      cooldownTimeoutRef.current = null
-    }, 600)
+    // Start the chat cooldown.
+    startChatCooldown()
 
     // Close the emoji picker.
     setIsEmojiPickerOpen(false)
@@ -149,15 +168,24 @@ function ChatBar({ room, isDisabled }: ChatBarProps) {
           className="chat-action"
           aria-label="Emojis"
           aria-expanded={isEmojiPickerOpen}
+          aria-controls="emoji-picker"
           title="Emojis"
-          onClick={() => setIsEmojiPickerOpen((open) => !open)}
+          onClick={() => {
+            // Notify the server that the player interacted with the emoji picker.
+            room.send('activity')
+
+            setIsEmojiPickerOpen((open) => !open)
+          }}
         >
           <Smile size={20} />
         </button>
 
         {/* Emoji picker */}
         <div
+          id="emoji-picker"
           className="emoji-picker"
+          role="group"
+          aria-label="Choose an emoji"
           style={{ display: isEmojiPickerOpen ? undefined : 'none' }}
           aria-hidden={!isEmojiPickerOpen}
         >
@@ -181,7 +209,11 @@ function ChatBar({ room, isDisabled }: ChatBarProps) {
         placeholder="Say something..."
         aria-label="Chat message"
         value={chatInput}
-        onChange={(event) => setChatInput(event.target.value)}
+        onFocus={reportActivity}
+        onChange={(event) => {
+          reportActivity()
+          setChatInput(event.target.value)
+        }}
         onKeyDown={(event) => {
           if (event.key === 'Enter') {
             sendMessage()
@@ -206,6 +238,7 @@ function ChatBar({ room, isDisabled }: ChatBarProps) {
         className="chat-action"
         aria-label="Players"
         title="Players"
+        onClick={reportActivity}
       >
         <Users size={20} />
       </button>
@@ -216,6 +249,7 @@ function ChatBar({ room, isDisabled }: ChatBarProps) {
         className="chat-action"
         aria-label="My Profile"
         title="My Profile"
+        onClick={reportActivity}
       >
         <UserRound size={20} />
       </button>
@@ -226,6 +260,7 @@ function ChatBar({ room, isDisabled }: ChatBarProps) {
         className="chat-action"
         aria-label="Settings"
         title="Settings"
+        onClick={reportActivity}
       >
         <Settings size={20} />
       </button>
