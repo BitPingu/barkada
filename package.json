@@ -1,0 +1,21 @@
+{
+  "private": true,
+  "scripts": {
+    "client:dev": "npm run dev --prefix client",
+    "client:lint": "npm run lint --prefix client",
+    "client:build": "npm run build --prefix client",
+    "client:preview": "npm run preview --prefix client",
+    "server:dev": "npm run dev --prefix server",
+    "server:test": "npm test --prefix server",
+    "server:build": "npm run build --prefix server",
+    "server:start": "npm start --prefix server",
+    "server:loadtest": "npm run loadtest --prefix server",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "npm run client:lint",
+    "check": "npm run format:check && npm run lint && npm run client:build && npm run server:test && npm run server:build"
+  },
+  "devDependencies": {
+    "prettier": "^3.10.1"
+  }
+}

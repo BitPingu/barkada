@@ -13,37 +13,37 @@ permissions:
 # Define the jobs that make up the CI pipeline.
 jobs:
   build:
-    # Run the job on a fresh Ubuntu environment
+    # Run the job on a fresh Ubuntu environment.
     runs-on: ubuntu-latest
 
     steps:
-      # Download the repository code
+      # Download the repository code.
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Install Node.js and enable npm dependency caching
+      # Install Node.js and enable npm dependency caching.
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: client/package-lock.json
+          cache-dependency-path: |
+            package-lock.json
+            client/package-lock.json
+            server/package-lock.json
 
-      # Install dependencies from package-lock.json
-      - name: Install dependencies
-        working-directory: client
+      # Install root dependencies.
+      - name: Install root dependencies
         run: npm ci
 
-      # Check code for linting issues
-      - name: Run ESLint
-        working-directory: client
-        run: npm run lint
+      # Install client dependencies.
+      - name: Install client dependencies
+        run: npm ci --prefix client
 
-      # Check code formatting
-      - name: Check formatting
-        run: npx --yes prettier --check .
+      # Install server dependencies.
+      - name: Install server dependencies
+        run: npm ci --prefix server
 
-      # Verify that the project builds successfully
-      - name: Build project
-        working-directory: client
-        run: npm run build
+      # Run formatting, linting, tests, and production builds.
+      - name: Run checks
+        run: npm run check
