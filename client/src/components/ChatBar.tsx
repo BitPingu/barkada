@@ -1,20 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Room } from '@colyseus/sdk'
-import {
-  Smile,
-  Send,
-  Users,
-  UserRound,
-  Settings,
-  MessageSquareText,
-} from 'lucide-react'
+import { Smile, Send, Users, UserRound, Settings } from 'lucide-react'
 import { FluentEmoji } from '@lobehub/fluent-emoji'
 
 type ChatBarProps = {
   room: Room
   isDisabled: boolean
-  isChatHistoryOpen: boolean
-  onToggleChatHistory: () => void
 }
 
 // Emojis available in the picker.
@@ -33,12 +24,7 @@ const EMOJIS = [
   '🙏',
 ]
 
-function ChatBar({
-  room,
-  isDisabled,
-  isChatHistoryOpen,
-  onToggleChatHistory,
-}: ChatBarProps) {
+function ChatBar({ room, isDisabled }: ChatBarProps) {
   // Store the message currently being typed.
   const [chatInput, setChatInput] = useState('')
 
@@ -186,18 +172,6 @@ function ChatBar({
           ))}
         </div>
       </div>
-
-      {/* Chat history button */}
-      <button
-        type="button"
-        className={`chat-action ${isChatHistoryOpen ? 'active' : ''}`}
-        aria-label="Chat history"
-        aria-expanded={isChatHistoryOpen}
-        title="Chat history"
-        onClick={onToggleChatHistory}
-      >
-        <MessageSquareText size={20} />
-      </button>
 
       {/* Message input */}
       <input

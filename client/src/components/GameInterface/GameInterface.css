@@ -79,43 +79,32 @@
   height: 100% !important;
 }
 
-/* Chat history panel */
-.chat-history-panel {
+/* Chat history toggle */
+.chat-history-toggle {
   position: absolute;
   top: 12px;
   left: 12px;
-  z-index: 6;
-  width: 360px;
-  max-height: 220px;
-  overflow: hidden;
+  z-index: 7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 36px;
   border: 1px solid #d5dee8;
   border-radius: 8px;
   background: rgb(255 255 255 / 95%);
-  box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
-}
-
-/* Chat history messages */
-.chat-history {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 220px;
-  padding: 12px;
-  overflow-y: auto;
   color: #26384b;
-  font-size: 13px;
-  line-height: 1.4;
-  overflow-wrap: anywhere;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 15%);
+  transition:
+    background 0.2s,
+    border-color 0.2s;
 }
 
-.chat-history-message strong {
-  font-weight: 700;
-}
-
-.chat-history-empty {
-  margin: 0;
-  color: #91a0b0;
-  text-align: center;
+.chat-history-toggle:hover,
+.chat-history-toggle.active {
+  border-color: #3978c6;
+  background: #f0f5fb;
 }
 
 /* Game notifications */

@@ -789,14 +789,28 @@ describe('GameRoom', () => {
     })
 
     try {
-      // Listen for notifications from the second player's arrival.
+      // Wait for the notification announcing the second player's arrival.
       const notificationPromise = new Promise<{
         message: string
         startAt: number
         expiresAt: number
         serverNow: number
       }>((resolve) => {
-        firstClient.onMessage('notification', resolve)
+        // Listen for join notifications from the room.
+        firstClient.onMessage(
+          'notification',
+          (notification: {
+            message: string
+            startAt: number
+            expiresAt: number
+            serverNow: number
+          }) => {
+            // Ignore Guest 1's own join notification.
+            if (notification.message === 'Guest 2 joined the game!') {
+              resolve(notification)
+            }
+          },
+        )
       })
 
       // Connect the second client.
@@ -805,16 +819,18 @@ describe('GameRoom', () => {
       })
 
       try {
-        // Verify the join notification was broadcast.
+        // Verify the second player's join notification was broadcast.
         const notification = await notificationPromise
         assert.strictEqual(notification.message, 'Guest 2 joined the game!')
         assert.strictEqual(typeof notification.startAt, 'number')
         assert.strictEqual(typeof notification.expiresAt, 'number')
         assert.strictEqual(typeof notification.serverNow, 'number')
       } finally {
+        // Disconnect the second client.
         await secondClient.leave()
       }
     } finally {
+      // Disconnect the first client.
       await firstClient.leave()
     }
   })

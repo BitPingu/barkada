@@ -3,6 +3,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useRef,
   useState,
   type ComponentProps,
 } from 'react'
@@ -11,6 +12,7 @@ import ConnectionOverlay from '../ConnectionOverlay'
 import ChatBar from '../ChatBar'
 import ChatHistory from '../ChatHistory/ChatHistory'
 import useScaledStage from '../../hooks/useScaledStage'
+import { MessageSquareText } from 'lucide-react'
 import type {
   ChatHistoryMessage,
   ChatMessage,
@@ -73,13 +75,37 @@ function GameInterface({
   // Tracks whether the chat history panel is visible.
   const [isChatHistoryOpen, setIsChatHistoryOpen] = useState(false)
 
+  // Track the chat history toggle and panel.
+  const chatHistoryRef = useRef<HTMLDivElement>(null)
+
   // Check whether the current room has finished initializing.
   const isGameReady = room !== null && readyRoom === room
+
+  // Close chat history when the player clicks outside its controls.
+  useEffect(() => {
+    if (!isChatHistoryOpen) {
+      return
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (
+        event.target instanceof Node &&
+        !chatHistoryRef.current?.contains(event.target)
+      ) {
+        setIsChatHistoryOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+    }
+  }, [isChatHistoryOpen])
 
   // Request chat history and listen for incoming messages.
   useEffect(() => {
     if (!room || !isGameReady) {
-      setChatMessages([])
       return
     }
 
@@ -117,13 +143,6 @@ function GameInterface({
       unsubscribeChat()
     }
   }, [room, isGameReady])
-
-  // Close the chat history when leaving a room.
-  useEffect(() => {
-    if (!room) {
-      setIsChatHistoryOpen(false)
-    }
-  }, [room])
 
   // Notify the interface when the game has finished initializing.
   const handleGameReady = useCallback(() => {
@@ -177,6 +196,32 @@ function GameInterface({
                   }
                 }}
               >
+                {/* Chat history controls */}
+                <div ref={chatHistoryRef}>
+                  {/* Chat history toggle */}
+                  <button
+                    type="button"
+                    className={`chat-history-toggle ${isChatHistoryOpen ? 'active' : ''}`}
+                    aria-label="Chat history"
+                    aria-expanded={isChatHistoryOpen}
+                    aria-controls="chat-history-panel"
+                    title="Chat history"
+                    onClick={() => setIsChatHistoryOpen((isOpen) => !isOpen)}
+                  >
+                    <MessageSquareText size={20} />
+                  </button>
+
+                  {/* Display chat history above the game world. */}
+                  {isChatHistoryOpen && (
+                    <div className="chat-history-panel" id="chat-history-panel">
+                      <ChatHistory
+                        messages={chatMessages}
+                        currentPlayerSessionId={room.sessionId}
+                      />
+                    </div>
+                  )}
+                </div>
+
                 {/* Load the game separately from the app bundle
                   after the room connection is established. */}
                 <Suspense fallback={null}>
@@ -188,13 +233,6 @@ function GameInterface({
                     onReady={handleGameReady}
                   />
                 </Suspense>
-
-                {/* Display chat history above the game world. */}
-                {isChatHistoryOpen && (
-                  <div className="chat-history-panel">
-                    <ChatHistory messages={chatMessages} />
-                  </div>
-                )}
               </div>
             </div>
           ) : (
@@ -206,14 +244,7 @@ function GameInterface({
         {/* Bottom toolbar area. */}
         <div className="interface-footer">
           {room ? (
-            <ChatBar
-              room={room}
-              isDisabled={isDialogueOpen}
-              isChatHistoryOpen={isChatHistoryOpen}
-              onToggleChatHistory={() =>
-                setIsChatHistoryOpen((isOpen) => !isOpen)
-              }
-            />
+            <ChatBar room={room} isDisabled={isDialogueOpen} />
           ) : (
             // Reserve space for the chat toolbar during character selection.
             <div className="interface-footer-placeholder" />
