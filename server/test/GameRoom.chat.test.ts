@@ -19,6 +19,11 @@ describe('GameRoom chat', () => {
       displayName: 'Guest 1',
     })
 
+    // Register handlers for messages this test does not inspect.
+    client.onMessage('notification', () => {})
+    client.onMessage('chat-history-update', () => {})
+    client.onMessage('chat', () => {})
+
     // Send empty and whitespace-only chat messages.
     client.send('chat', { text: '' })
     client.send('chat', { text: '   ' })
@@ -55,6 +60,11 @@ describe('GameRoom chat', () => {
       displayName: 'Guest 1',
     })
 
+    // Register handlers for messages this test does not inspect.
+    client.onMessage('notification', () => {})
+    client.onMessage('chat-history-update', () => {})
+    client.onMessage('chat', () => {})
+
     // Send a chat message with non-string text.
     client.send('chat', { text: 123 } as unknown as { text: string })
 
@@ -89,6 +99,11 @@ describe('GameRoom chat', () => {
     const client = await testSetup.colyseus.connectTo(room, {
       displayName: 'Guest 1',
     })
+
+    // Register handlers for messages this test does not inspect.
+    client.onMessage('notification', () => {})
+    client.onMessage('chat-history-update', () => {})
+    client.onMessage('chat', () => {})
 
     // Send a chat message exceeding the character limit.
     client.send('chat', { text: 'A'.repeat(101) })
@@ -125,6 +140,10 @@ describe('GameRoom chat', () => {
       displayName: 'Guest 1',
     })
 
+    // Register handlers for messages this test does not inspect.
+    client.onMessage('notification', () => {})
+    client.onMessage('chat-history-update', () => {})
+
     // Listen for the live chat message.
     const messagePromise = new Promise<{ text: string }>((resolve) => {
       client.onMessage('chat', resolve)
@@ -152,6 +171,10 @@ describe('GameRoom chat', () => {
     const client = await testSetup.colyseus.connectTo(room, {
       displayName: 'Guest 1',
     })
+
+    // Register handlers for messages this test does not inspect.
+    client.onMessage('notification', () => {})
+    client.onMessage('chat-history-update', () => {})
 
     // Preserve the original clock and use a controlled timestamp.
     const originalNow = Date.now
@@ -213,6 +236,10 @@ describe('GameRoom chat', () => {
       displayName: 'Guest 1',
     })
 
+    // Register handlers for messages this test does not inspect.
+    client.onMessage('notification', () => {})
+    client.onMessage('chat-history-update', () => {})
+
     // Preserve the original clock and use a controlled timestamp.
     const originalNow = Date.now
     let currentTime = originalNow()
@@ -263,6 +290,11 @@ describe('GameRoom chat', () => {
       displayName: 'Guest 1',
     })
 
+    // Register handlers for messages this test does not inspect.
+    firstClient.onMessage('notification', () => {})
+    firstClient.onMessage('chat-history-update', () => {})
+    firstClient.onMessage('chat', () => {})
+
     let secondClient!: typeof firstClient
 
     try {
@@ -270,6 +302,10 @@ describe('GameRoom chat', () => {
       secondClient = await testSetup.colyseus.connectTo(room, {
         displayName: 'Guest 2',
       })
+
+      // Register handlers for messages this test does not inspect.
+      secondClient.onMessage('notification', () => {})
+      secondClient.onMessage('chat-history-update', () => {})
 
       // Listen for chat messages on the second client.
       const chatPromise = new Promise<{

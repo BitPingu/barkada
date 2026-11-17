@@ -325,6 +325,9 @@ describe('GameRoom interactions', () => {
       displayName: 'Guest 1',
     })
 
+    // Register a handler for chat history updates this test does not inspect.
+    client.onMessage('chat-history-update', () => {})
+
     const originalNow = Date.now
     let currentTime = originalNow()
     let receivedEmoji = false

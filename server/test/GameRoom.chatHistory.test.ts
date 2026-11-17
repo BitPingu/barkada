@@ -19,6 +19,9 @@ describe('GameRoom chat history', () => {
       displayName: 'Guest 1',
     })
 
+    // Register a handler for chat history updates this test does not inspect.
+    client1.onMessage('chat-history-update', () => {})
+
     // Listen for the live chat message.
     const liveMessagePromise = new Promise<{
       sessionId: string
@@ -77,6 +80,9 @@ describe('GameRoom chat history', () => {
       displayName: 'Guest 1',
     })
 
+    // Register a handler for chat history updates this test does not inspect.
+    client1.onMessage('chat-history-update', () => {})
+
     // Preserve the original clock and use a controlled timestamp.
     const originalNow = Date.now
     let currentTime = originalNow()
@@ -132,6 +138,9 @@ describe('GameRoom chat history', () => {
       displayName: 'Guest 1',
     })
 
+    // Register a handler for chat history updates this test does not inspect.
+    client1.onMessage('chat-history-update', () => {})
+
     // Send a chat message.
     const messagePromise = new Promise<void>((resolve) => {
       client1.onMessage('chat', () => resolve())
@@ -178,6 +187,9 @@ describe('GameRoom chat history', () => {
     const client1 = await testSetup.colyseus.connectTo(room, {
       displayName: 'Guest 1',
     })
+
+    // Register a handler for chat history updates this test does not inspect.
+    client1.onMessage('chat-history-update', () => {})
 
     // Send a chat message.
     const messagePromise = new Promise<void>((resolve) => {
