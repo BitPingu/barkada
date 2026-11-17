@@ -18,6 +18,17 @@ const ALLOWED_EMOJIS = [
   '🙏',
 ]
 
+// Defines the structure of a stored chat message.
+type ChatMessage = {
+  sessionId: string
+  name: string
+  text: string
+  timestamp: number
+}
+
+// Maximum number of chat messages retained in room history.
+const MAX_CHAT_HISTORY = 100
+
 export class GameRoom extends Room<{ state: GameRoomState }> {
   // Maximum number of players allowed in one room.
   maxClients = 20
@@ -27,6 +38,9 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
 
   // Tracks the last time each player sent a chat message.
   private lastChatMessage = new Map<string, number>()
+
+  // Stores recent chat messages for the current room session.
+  private chatHistory: ChatMessage[] = []
 
   // Broadcasts a notification with a synchronized display schedule.
   private broadcastNotification(message: string) {
@@ -123,13 +137,38 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
         Math.max(4000, 3000 + text.length * 60),
       )
 
-      // Broadcast the message with its expiration timestamp.
-      this.broadcast('chat', {
+      // Create the chat message with its timestamp.
+      const chatMessage: ChatMessage = {
         sessionId: client.sessionId,
         name: player.name,
         text,
+        timestamp: now,
+      }
+
+      // Add the message to room history.
+      this.chatHistory.push(chatMessage)
+
+      // Remove the oldest messages when the history limit is exceeded.
+      if (this.chatHistory.length > MAX_CHAT_HISTORY) {
+        this.chatHistory.shift()
+      }
+
+      // Broadcast the message with its expiration timestamp.
+      this.broadcast('chat', {
+        ...chatMessage,
         expiresAt: now + displayDuration,
       })
+    })
+
+    // Handle requests for the room's chat history.
+    this.onMessage('chat-history-request', (client) => {
+      // Ignore requests from clients without a player entry.
+      if (!this.state.players.has(client.sessionId)) {
+        return
+      }
+
+      // Send the current chat history to the requesting client.
+      client.send('chat-history', this.chatHistory)
     })
 
     // Handle incoming emoji selections.
@@ -258,6 +297,11 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
 
     // Remove the player's chat cooldown when they leave.
     this.lastChatMessage.delete(client.sessionId)
+
+    // Clear chat history when the room becomes empty.
+    if (this.state.players.size === 0) {
+      this.chatHistory = []
+    }
 
     console.log(client.sessionId, 'left!', code)
   }
