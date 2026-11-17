@@ -38,50 +38,48 @@ barkada/
 - Node.js (22 or later)
 - npm
 
-### 1. Clone the repository
+### Installation
+
+Clone the repository and install the dependencies:
 
 ```bash
 git clone https://github.com/BitPingu/barkada.git
 cd barkada
-```
 
-### 2. Install dependencies
-
-From the repository root:
-
-```bash
 npm install
 npm install --prefix client
 npm install --prefix server
 ```
 
-### 3. Configure the client
+### Running Locally
 
-Create a `.env.local` file in the `client/` directory:
-
-```env
-VITE_SERVER_URL=http://localhost:2567
-```
-
-### 4. Start the server
-
-From the repository root:
+Start the multiplayer server in one terminal:
 
 ```bash
 npm run server:dev
 ```
 
-### 5. Start the client
-
-In a separate terminal, from the repository root:
+Start the client in another terminal:
 
 ```bash
 npm run client:dev
 ```
 
-Open the local URL provided by Vite in your browser.
+Open the local URL provided by Vite, typically `http://localhost:5173`.
 
-The frontend runs through Vite, while the Colyseus server listens on `http://localhost:2567` by default.
+The Colyseus server runs on port `2567`.
+
+### Accessing from Other Devices
+
+barkada also supports access from other devices on the same local network.
+
+1. Start the client and server using the commands above.
+2. Find the **Network** URL displayed in the Vite terminal.
+3. Open that URL on another device connected to the same Wi-Fi network.
+
+The client automatically connects to the Colyseus server using the hostname in the browser's address bar. No additional environment configuration is required.
+
+If you cannot connect, check that your firewall allows incoming connections on ports `5173` and `2567`.
 
 ## Scripts
 
