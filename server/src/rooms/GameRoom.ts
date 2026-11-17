@@ -18,8 +18,9 @@ const ALLOWED_EMOJIS = [
   '🙏',
 ]
 
-// Defines the structure of a stored chat message.
-type ChatMessage = {
+// Defines the structure of a stored chat history message.
+export type ChatHistoryMessage = {
+  type: 'chat' | 'join' | 'leave'
   sessionId: string
   name: string
   text: string
@@ -40,7 +41,7 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
   private lastChatMessage = new Map<string, number>()
 
   // Stores recent chat messages for the current room session.
-  private chatHistory: ChatMessage[] = []
+  private chatHistory: ChatHistoryMessage[] = []
 
   // Broadcasts a notification with a synchronized display schedule.
   private broadcastNotification(message: string) {
@@ -52,6 +53,19 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
       expiresAt: now + 3000,
       serverNow: now,
     })
+  }
+
+  // Add a message to room history and broadcast the update.
+  private addChatHistoryMessage(message: ChatHistoryMessage) {
+    this.chatHistory.push(message)
+
+    // Remove the oldest messages when the history limit is exceeded.
+    if (this.chatHistory.length > MAX_CHAT_HISTORY) {
+      this.chatHistory.shift()
+    }
+
+    // Notify players currently in the room about the history update.
+    this.broadcast('chat-history-update', message)
   }
 
   onCreate() {
@@ -138,7 +152,8 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
       )
 
       // Create the chat message with its timestamp.
-      const chatMessage: ChatMessage = {
+      const chatMessage: ChatHistoryMessage = {
+        type: 'chat',
         sessionId: client.sessionId,
         name: player.name,
         text,
@@ -146,12 +161,7 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
       }
 
       // Add the message to room history.
-      this.chatHistory.push(chatMessage)
-
-      // Remove the oldest messages when the history limit is exceeded.
-      if (this.chatHistory.length > MAX_CHAT_HISTORY) {
-        this.chatHistory.shift()
-      }
+      this.addChatHistoryMessage(chatMessage)
 
       // Broadcast the message with its expiration timestamp.
       this.broadcast('chat', {
@@ -249,6 +259,15 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
     // Add the player to the synchronized room state.
     this.state.players.set(client.sessionId, player)
 
+    // Add a player join event to room history.
+    this.addChatHistoryMessage({
+      type: 'join',
+      sessionId: client.sessionId,
+      name: displayName,
+      text: `${displayName} joined the game!`,
+      timestamp: Date.now(),
+    })
+
     // Notify everyone that this player joined.
     this.broadcastNotification(`${displayName} joined the game!`)
 
@@ -287,8 +306,17 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
     // Get the player's information before removing them.
     const player = this.state.players.get(client.sessionId)
 
-    // Notify everyone that this player left.
+    // Record the player's departure in room history.
     if (player) {
+      this.addChatHistoryMessage({
+        type: 'leave',
+        sessionId: client.sessionId,
+        name: player.name,
+        text: `${player.name} left the game!`,
+        timestamp: Date.now(),
+      })
+
+      // Notify everyone that this player left.
       this.broadcastNotification(`${player.name} left the game!`)
     }
 

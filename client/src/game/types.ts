@@ -15,8 +15,9 @@ export interface GameRoomState {
   players: MapSchema<PlayerState>
 }
 
-// Represents the shared data for a chat message.
+// Represents the shared data for a chat history message.
 export interface ChatHistoryMessage {
+  type: 'chat' | 'join' | 'leave'
   sessionId: string
   name: string
   text: string
@@ -25,6 +26,7 @@ export interface ChatHistoryMessage {
 
 // Represents a live chat message received from the server.
 export interface ChatMessage extends ChatHistoryMessage {
+  type: 'chat'
   expiresAt: number
 }
 

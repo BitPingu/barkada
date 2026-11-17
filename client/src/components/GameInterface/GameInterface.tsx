@@ -120,6 +120,7 @@ function GameInterface({
         [
           ...currentMessages,
           {
+            type: 'chat' as const,
             sessionId: message.sessionId,
             name: message.name,
             text: message.text,

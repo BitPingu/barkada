@@ -3,6 +3,7 @@ import { ColyseusTestServer, boot } from '@colyseus/testing'
 
 import appConfig from '../src/app.config.js'
 import { GameRoomState } from '../src/rooms/schema/GameRoomState.js'
+import type { ChatHistoryMessage } from '../src/rooms/GameRoom.js'
 
 describe('GameRoom', () => {
   let colyseus: ColyseusTestServer<typeof appConfig>
@@ -289,12 +290,17 @@ describe('GameRoom', () => {
     await new Promise((resolve) => setTimeout(resolve, 50))
 
     // Verify that no messages were added to chat history.
-    const historyPromise = new Promise<unknown[]>((resolve) => {
+    const historyPromise = new Promise<ChatHistoryMessage[]>((resolve) => {
       client.onMessage('chat-history', resolve)
     })
     client.send('chat-history-request', {})
 
-    assert.deepStrictEqual(await historyPromise, [])
+    // Verify no chat messages were added to history.
+    const history = await historyPromise
+
+    assert.strictEqual(history.length, 1)
+    assert.strictEqual(history[0].type, 'join')
+    assert.strictEqual(history[0].name, 'Guest 1')
 
     // Disconnect the client.
     await client.leave()
@@ -316,13 +322,17 @@ describe('GameRoom', () => {
     await new Promise((resolve) => setTimeout(resolve, 50))
 
     // Request chat history.
-    const historyPromise = new Promise<unknown[]>((resolve) => {
+    const historyPromise = new Promise<ChatHistoryMessage[]>((resolve) => {
       client.onMessage('chat-history', resolve)
     })
     client.send('chat-history-request', {})
 
-    // Verify that no message was added to chat history.
-    assert.deepStrictEqual(await historyPromise, [])
+    // Verify no chat messages were added to history.
+    const history = await historyPromise
+
+    assert.strictEqual(history.length, 1)
+    assert.strictEqual(history[0].type, 'join')
+    assert.strictEqual(history[0].name, 'Guest 1')
 
     // Disconnect the client.
     await client.leave()
@@ -344,13 +354,17 @@ describe('GameRoom', () => {
     await new Promise((resolve) => setTimeout(resolve, 50))
 
     // Request chat history.
-    const historyPromise = new Promise<unknown[]>((resolve) => {
+    const historyPromise = new Promise<ChatHistoryMessage[]>((resolve) => {
       client.onMessage('chat-history', resolve)
     })
     client.send('chat-history-request', {})
 
-    // Verify that no message was added to chat history.
-    assert.deepStrictEqual(await historyPromise, [])
+    // Verify no chat messages were added to history.
+    const history = await historyPromise
+
+    assert.strictEqual(history.length, 1)
+    assert.strictEqual(history[0].type, 'join')
+    assert.strictEqual(history[0].name, 'Guest 1')
 
     // Disconnect the client.
     await client.leave()
@@ -413,7 +427,7 @@ describe('GameRoom', () => {
       currentTime += 499
 
       // Listen for the chat history response.
-      const historyPromise = new Promise<{ text: string }[]>((resolve) => {
+      const historyPromise = new Promise<ChatHistoryMessage[]>((resolve) => {
         client.onMessage('chat-history', resolve)
       })
 
@@ -426,8 +440,9 @@ describe('GameRoom', () => {
       // Verify the second message was rejected.
       const history = await historyPromise
 
-      assert.strictEqual(history.length, 1)
-      assert.strictEqual(history[0].text, 'First message')
+      assert.strictEqual(history.length, 2)
+      assert.strictEqual(history[0].type, 'join')
+      assert.strictEqual(history[1].text, 'First message')
     } finally {
       // Restore the original clock.
       Date.now = originalNow
@@ -517,14 +532,7 @@ describe('GameRoom', () => {
     assert.strictEqual(typeof liveMessage.expiresAt, 'number')
 
     // Listen for the chat history response.
-    const historyPromise = new Promise<
-      {
-        sessionId: string
-        name: string
-        text: string
-        timestamp: number
-      }[]
-    >((resolve) => {
+    const historyPromise = new Promise<ChatHistoryMessage[]>((resolve) => {
       client1.onMessage('chat-history', resolve)
     })
 
@@ -534,13 +542,13 @@ describe('GameRoom', () => {
     // Verify the stored message was returned.
     const history = await historyPromise
 
-    assert.strictEqual(history.length, 1)
-    assert.deepStrictEqual(history[0], {
-      sessionId: client1.sessionId,
-      name: 'Guest 1',
-      text: 'Hello, world!',
-      timestamp: liveMessage.timestamp,
-    })
+    assert.strictEqual(history.length, 2)
+    assert.strictEqual(history[0].type, 'join')
+    assert.strictEqual(history[1].type, 'chat')
+    assert.strictEqual(history[1].sessionId, client1.sessionId)
+    assert.strictEqual(history[1].name, 'Guest 1')
+    assert.strictEqual(history[1].text, 'Hello, world!')
+    assert.strictEqual(history[1].timestamp, liveMessage.timestamp)
 
     // Disconnect the client.
     await client1.leave()
@@ -575,14 +583,7 @@ describe('GameRoom', () => {
       }
 
       // Listen for the chat history response.
-      const historyPromise = new Promise<
-        {
-          sessionId: string
-          name: string
-          text: string
-          timestamp: number
-        }[]
-      >((resolve) => {
+      const historyPromise = new Promise<ChatHistoryMessage[]>((resolve) => {
         client1.onMessage('chat-history', resolve)
       })
 
@@ -593,6 +594,7 @@ describe('GameRoom', () => {
       const history = await historyPromise
 
       assert.strictEqual(history.length, 100)
+      assert.strictEqual(history[0].type, 'chat')
       assert.strictEqual(history[0].text, 'Message 2')
       assert.strictEqual(history[99].text, 'Message 101')
     } finally {
@@ -630,14 +632,7 @@ describe('GameRoom', () => {
     })
 
     // Listen for the chat history response.
-    const historyPromise = new Promise<
-      {
-        sessionId: string
-        name: string
-        text: string
-        timestamp: number
-      }[]
-    >((resolve) => {
+    const historyPromise = new Promise<ChatHistoryMessage[]>((resolve) => {
       client2.onMessage('chat-history', resolve)
     })
 
@@ -647,7 +642,9 @@ describe('GameRoom', () => {
     // Verify the previous session's history was cleared.
     const history = await historyPromise
 
-    assert.deepStrictEqual(history, [])
+    assert.strictEqual(history.length, 1)
+    assert.strictEqual(history[0].type, 'join')
+    assert.strictEqual(history[0].name, 'Guest 2')
 
     // Disconnect the new player.
     await client2.leave()
@@ -688,14 +685,7 @@ describe('GameRoom', () => {
     assert.strictEqual(room.state.players.has(client1.sessionId), true)
 
     // Listen for the chat history response.
-    const historyPromise = new Promise<
-      {
-        sessionId: string
-        name: string
-        text: string
-        timestamp: number
-      }[]
-    >((resolve) => {
+    const historyPromise = new Promise<ChatHistoryMessage[]>((resolve) => {
       reconnectedClient.onMessage('chat-history', resolve)
     })
 
@@ -705,10 +695,12 @@ describe('GameRoom', () => {
     // Verify the previous message is still available.
     const history = await historyPromise
 
-    assert.strictEqual(history.length, 1)
-    assert.strictEqual(history[0].sessionId, client1.sessionId)
-    assert.strictEqual(history[0].name, 'Guest 1')
-    assert.strictEqual(history[0].text, 'Hello, world!')
+    assert.strictEqual(history.length, 2)
+    assert.strictEqual(history[0].type, 'join')
+    assert.strictEqual(history[1].type, 'chat')
+    assert.strictEqual(history[1].sessionId, client1.sessionId)
+    assert.strictEqual(history[1].name, 'Guest 1')
+    assert.strictEqual(history[1].text, 'Hello, world!')
 
     // Disconnect the reconnected client.
     await reconnectedClient.leave()
@@ -813,6 +805,17 @@ describe('GameRoom', () => {
         )
       })
 
+      // Listen for the second player's join event in chat history.
+      const historyUpdatePromise = new Promise<{
+        type: string
+        sessionId: string
+        name: string
+        text: string
+        timestamp: number
+      }>((resolve) => {
+        firstClient.onMessage('chat-history-update', resolve)
+      })
+
       // Connect the second client.
       const secondClient = await colyseus.connectTo(room, {
         displayName: 'Guest 2',
@@ -821,6 +824,15 @@ describe('GameRoom', () => {
       try {
         // Verify the second player's join notification was broadcast.
         const notification = await notificationPromise
+
+        // Verify the second player's join event was added to chat history.
+        const historyUpdate = await historyUpdatePromise
+
+        assert.strictEqual(historyUpdate.type, 'join')
+        assert.strictEqual(historyUpdate.sessionId, secondClient.sessionId)
+        assert.strictEqual(historyUpdate.name, 'Guest 2')
+        assert.strictEqual(historyUpdate.text, 'Guest 2 joined the game!')
+        assert.strictEqual(typeof historyUpdate.timestamp, 'number')
         assert.strictEqual(notification.message, 'Guest 2 joined the game!')
         assert.strictEqual(typeof notification.startAt, 'number')
         assert.strictEqual(typeof notification.expiresAt, 'number')
@@ -856,11 +868,31 @@ describe('GameRoom', () => {
         firstClient.onMessage('notification', resolve)
       })
 
+      // Listen for the second player's leave event in chat history.
+      const historyUpdatePromise = new Promise<{
+        type: string
+        sessionId: string
+        name: string
+        text: string
+        timestamp: number
+      }>((resolve) => {
+        firstClient.onMessage('chat-history-update', resolve)
+      })
+
       // Disconnect the second client.
       await secondClient.leave()
 
       // Verify the leave notification was broadcast.
       const notification = await notificationPromise
+
+      // Verify the second player's leave event was added to chat history.
+      const historyUpdate = await historyUpdatePromise
+
+      assert.strictEqual(historyUpdate.type, 'leave')
+      assert.strictEqual(historyUpdate.sessionId, secondClient.sessionId)
+      assert.strictEqual(historyUpdate.name, 'Guest 2')
+      assert.strictEqual(historyUpdate.text, 'Guest 2 left the game!')
+      assert.strictEqual(typeof historyUpdate.timestamp, 'number')
       assert.strictEqual(notification.message, 'Guest 2 left the game!')
     } finally {
       await firstClient.leave()
