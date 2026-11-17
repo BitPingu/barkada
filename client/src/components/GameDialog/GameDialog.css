@@ -1,0 +1,55 @@
+/* Game dialog overlay */
+.game-dialog-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(38 56 75 / 65%);
+  border-radius: 12px;
+}
+
+.game-dialog {
+  width: 340px;
+  max-width: calc(100% - 32px);
+  padding: 24px;
+  background: #fff;
+  border-radius: 12px;
+  text-align: center;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.game-dialog h2 {
+  margin: 0 0 10px;
+  color: #26384b;
+  line-height: 1.3;
+}
+
+.game-dialog p {
+  margin: 0;
+  color: #526477;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.game-dialog-button {
+  margin-top: 20px;
+  padding: 11px 20px;
+  border: 0;
+  border-radius: 8px;
+  background: #3978c6;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 200ms ease,
+    opacity 200ms ease,
+    box-shadow 200ms ease;
+}
+
+.game-dialog-button:hover {
+  background: #2d65a9;
+}

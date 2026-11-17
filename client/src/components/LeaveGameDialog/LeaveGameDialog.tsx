@@ -1,3 +1,6 @@
+import '../GameDialog/GameDialog.css'
+import './LeaveGameDialog.css'
+
 type LeaveGameDialogProps = {
   onConfirm: () => void
   onCancel: () => void

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Room } from '@colyseus/sdk'
 import { Smile, Send, Users, UserRound, Settings } from 'lucide-react'
 import { FluentEmoji } from '@lobehub/fluent-emoji'
+import './ChatBar.css'
 
 type ChatBarProps = {
   room: Room

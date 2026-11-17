@@ -1,3 +1,6 @@
+import '../GameDialog/GameDialog.css'
+import './SessionExpiredDialog.css'
+
 type SessionExpiredDialogProps = {
   message: string
   onContinue: () => void

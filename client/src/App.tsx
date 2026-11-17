@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import GameHeader from './components/GameHeader/GameHeader'
 import GameInterface from './components/GameInterface/GameInterface'
-import LeaveGameDialog from './components/LeaveGameDialog'
-import SessionExpiredDialog from './components/SessionExpiredDialog'
+import LeaveGameDialog from './components/LeaveGameDialog/LeaveGameDialog'
+import SessionExpiredDialog from './components/SessionExpiredDialog/SessionExpiredDialog'
 import useGameConnection from './hooks/useGameConnection'
 import './App.css'
 

@@ -8,8 +8,8 @@ import {
   type ComponentProps,
 } from 'react'
 import CharacterSelection from '../CharacterSelection/CharacterSelection'
-import ConnectionOverlay from '../ConnectionOverlay'
-import ChatBar from '../ChatBar'
+import ConnectionOverlay from '../ConnectionOverlay/ConnectionOverlay'
+import ChatBar from '../ChatBar/ChatBar'
 import ChatHistory from '../ChatHistory/ChatHistory'
 import useScaledStage from '../../hooks/useScaledStage'
 import { MessageSquareText } from 'lucide-react'
