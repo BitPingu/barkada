@@ -3,7 +3,6 @@ import {
   Suspense,
   useCallback,
   useEffect,
-  useRef,
   useState,
   type ComponentProps,
 } from 'react'
@@ -68,36 +67,17 @@ function GameInterface({
   // Stores the recent chat messages received from the server.
   const [chatMessages, setChatMessages] = useState<ChatHistoryMessage[]>([])
 
-  // Tracks whether the chat history panel is visible.
-  const [isChatHistoryOpen, setIsChatHistoryOpen] = useState(false)
+  // Tracks which room has its chat history panel open.
+  const [chatHistoryRoomId, setChatHistoryRoomId] = useState<string | null>(
+    null,
+  )
 
-  // Track the chat history toggle and panel.
-  const chatHistoryRef = useRef<HTMLDivElement>(null)
+  // Check whether the chat history is open for the current room.
+  const isChatHistoryOpen =
+    room !== null && chatHistoryRoomId === room.sessionId
 
   // Check whether the current room has finished initializing.
   const isGameReady = room !== null && readyRoom === room
-
-  // Close chat history when the player clicks outside its controls.
-  useEffect(() => {
-    if (!isChatHistoryOpen) {
-      return
-    }
-
-    const handlePointerDown = (event: PointerEvent) => {
-      if (
-        event.target instanceof Node &&
-        !chatHistoryRef.current?.contains(event.target)
-      ) {
-        setIsChatHistoryOpen(false)
-      }
-    }
-
-    document.addEventListener('pointerdown', handlePointerDown)
-
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown)
-    }
-  }, [isChatHistoryOpen])
 
   // Request chat history and listen for incoming messages.
   useEffect(() => {
@@ -189,7 +169,7 @@ function GameInterface({
                 }}
               >
                 {/* Chat history controls */}
-                <div ref={chatHistoryRef}>
+                <div>
                   {/* Chat history toggle */}
                   <button
                     type="button"
@@ -198,7 +178,13 @@ function GameInterface({
                     aria-expanded={isChatHistoryOpen}
                     aria-controls="chat-history-panel"
                     title="Chat history"
-                    onClick={() => setIsChatHistoryOpen((isOpen) => !isOpen)}
+                    onClick={() => {
+                      if (room) {
+                        setChatHistoryRoomId(
+                          isChatHistoryOpen ? null : room.sessionId,
+                        )
+                      }
+                    }}
                   >
                     <MessageSquareText size={20} />
                   </button>

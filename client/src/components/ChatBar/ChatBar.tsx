@@ -148,6 +148,7 @@ function ChatBar({ room, isDisabled }: ChatBarProps) {
           type="button"
           className="chat-action"
           aria-label="Emojis"
+          aria-expanded={isEmojiPickerOpen}
           title="Emojis"
           onClick={() => setIsEmojiPickerOpen((open) => !open)}
         >
