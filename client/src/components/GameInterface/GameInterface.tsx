@@ -9,8 +9,13 @@ import {
 import CharacterSelection from '../CharacterSelection/CharacterSelection'
 import ConnectionOverlay from '../ConnectionOverlay'
 import ChatBar from '../ChatBar'
+import ChatHistory from '../ChatHistory/ChatHistory'
 import useScaledStage from '../../hooks/useScaledStage'
-import type { Notification } from '../../game/types'
+import type {
+  ChatHistoryMessage,
+  ChatMessage,
+  Notification,
+} from '../../game/types'
 import './GameInterface.css'
 
 // Lazy-load the Phaser game component.
@@ -62,8 +67,63 @@ function GameInterface({
   // Track which room has finished initializing.
   const [readyRoom, setReadyRoom] = useState<GameInterfaceProps['room']>(null)
 
+  // Stores the recent chat messages received from the server.
+  const [chatMessages, setChatMessages] = useState<ChatHistoryMessage[]>([])
+
+  // Tracks whether the chat history panel is visible.
+  const [isChatHistoryOpen, setIsChatHistoryOpen] = useState(false)
+
   // Check whether the current room has finished initializing.
   const isGameReady = room !== null && readyRoom === room
+
+  // Request chat history and listen for incoming messages.
+  useEffect(() => {
+    if (!room || !isGameReady) {
+      setChatMessages([])
+      return
+    }
+
+    // Replace the current history with the messages received from the server.
+    const handleChatHistory = (messages: ChatHistoryMessage[]) => {
+      setChatMessages(messages.slice(-100))
+    }
+
+    // Add incoming messages to the history.
+    const handleChatMessage = (message: ChatMessage) => {
+      setChatMessages((currentMessages) =>
+        [
+          ...currentMessages,
+          {
+            sessionId: message.sessionId,
+            name: message.name,
+            text: message.text,
+            timestamp: message.timestamp,
+          },
+        ].slice(-100),
+      )
+    }
+
+    // Register message listeners before requesting history.
+    const unsubscribeHistory = room.onMessage('chat-history', handleChatHistory)
+
+    const unsubscribeChat = room.onMessage('chat', handleChatMessage)
+
+    // Request the existing chat history.
+    room.send('chat-history-request')
+
+    // Remove listeners when the room changes or the component unmounts.
+    return () => {
+      unsubscribeHistory()
+      unsubscribeChat()
+    }
+  }, [room, isGameReady])
+
+  // Close the chat history when leaving a room.
+  useEffect(() => {
+    if (!room) {
+      setIsChatHistoryOpen(false)
+    }
+  }, [room])
 
   // Notify the interface when the game has finished initializing.
   const handleGameReady = useCallback(() => {
@@ -128,6 +188,13 @@ function GameInterface({
                     onReady={handleGameReady}
                   />
                 </Suspense>
+
+                {/* Display chat history above the game world. */}
+                {isChatHistoryOpen && (
+                  <div className="chat-history-panel">
+                    <ChatHistory messages={chatMessages} />
+                  </div>
+                )}
               </div>
             </div>
           ) : (
@@ -139,7 +206,14 @@ function GameInterface({
         {/* Bottom toolbar area. */}
         <div className="interface-footer">
           {room ? (
-            <ChatBar room={room} isDisabled={isDialogueOpen} />
+            <ChatBar
+              room={room}
+              isDisabled={isDialogueOpen}
+              isChatHistoryOpen={isChatHistoryOpen}
+              onToggleChatHistory={() =>
+                setIsChatHistoryOpen((isOpen) => !isOpen)
+              }
+            />
           ) : (
             // Reserve space for the chat toolbar during character selection.
             <div className="interface-footer-placeholder" />
