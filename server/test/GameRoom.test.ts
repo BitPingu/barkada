@@ -813,7 +813,20 @@ describe('GameRoom', () => {
         text: string
         timestamp: number
       }>((resolve) => {
-        firstClient.onMessage('chat-history-update', resolve)
+        firstClient.onMessage(
+          'chat-history-update',
+          (message: {
+            type: string
+            sessionId: string
+            name: string
+            text: string
+            timestamp: number
+          }) => {
+            if (message.type === 'join' && message.name === 'Guest 2') {
+              resolve(message)
+            }
+          },
+        )
       })
 
       // Connect the second client.
@@ -851,13 +864,9 @@ describe('GameRoom', () => {
     // Create a new room instance.
     const room = await colyseus.createRoom<GameRoomState>('main_room', {})
 
-    // Connect both clients.
+    // Connect the first client.
     const firstClient = await colyseus.connectTo(room, {
       displayName: 'Guest 1',
-    })
-
-    const secondClient = await colyseus.connectTo(room, {
-      displayName: 'Guest 2',
     })
 
     try {
@@ -865,7 +874,14 @@ describe('GameRoom', () => {
       const notificationPromise = new Promise<{
         message: string
       }>((resolve) => {
-        firstClient.onMessage('notification', resolve)
+        firstClient.onMessage(
+          'notification',
+          (notification: { message: string }) => {
+            if (notification.message === 'Guest 2 left the game!') {
+              resolve(notification)
+            }
+          },
+        )
       })
 
       // Listen for the second player's leave event in chat history.
@@ -876,7 +892,25 @@ describe('GameRoom', () => {
         text: string
         timestamp: number
       }>((resolve) => {
-        firstClient.onMessage('chat-history-update', resolve)
+        firstClient.onMessage(
+          'chat-history-update',
+          (message: {
+            type: string
+            sessionId: string
+            name: string
+            text: string
+            timestamp: number
+          }) => {
+            if (message.type === 'leave') {
+              resolve(message)
+            }
+          },
+        )
+      })
+
+      // Connect the second client after registering the message listeners.
+      const secondClient = await colyseus.connectTo(room, {
+        displayName: 'Guest 2',
       })
 
       // Disconnect the second client.
@@ -965,16 +999,19 @@ describe('GameRoom', () => {
     // Create a new room instance.
     const room = await colyseus.createRoom<GameRoomState>('main_room', {})
 
-    // Connect both clients.
+    // Connect the first client.
     const firstClient = await colyseus.connectTo(room, {
       displayName: 'Guest 1',
     })
 
-    const secondClient = await colyseus.connectTo(room, {
-      displayName: 'Guest 2',
-    })
+    let secondClient!: typeof firstClient
 
     try {
+      // Connect the second client.
+      secondClient = await colyseus.connectTo(room, {
+        displayName: 'Guest 2',
+      })
+
       // Listen for chat messages on the second client.
       const chatPromise = new Promise<{
         sessionId: string

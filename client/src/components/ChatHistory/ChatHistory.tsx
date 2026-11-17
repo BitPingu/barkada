@@ -36,16 +36,31 @@ export default function ChatHistory({
       {messages.length > 0 ? (
         messages.map((message, index) => {
           // Check whether the message belongs to the current player.
-          const isCurrentPlayer = message.sessionId === currentPlayerSessionId
+          const isCurrentPlayer =
+            message.type === 'chat' &&
+            message.sessionId === currentPlayerSessionId
+
+          // Check whether the message is a system event.
+          const isSystemMessage = message.type !== 'chat'
 
           return (
             <div
               className={`chat-history-message ${
-                isCurrentPlayer ? 'current-player' : ''
+                isSystemMessage
+                  ? 'system-message'
+                  : isCurrentPlayer
+                    ? 'current-player'
+                    : ''
               }`}
               key={`${message.sessionId}-${message.timestamp}-${index}`}
             >
-              <strong>{message.name}:</strong> {message.text}
+              {isSystemMessage ? (
+                <span>{message.text}</span>
+              ) : (
+                <>
+                  <strong>{message.name}:</strong> {message.text}
+                </>
+              )}
             </div>
           )
         })

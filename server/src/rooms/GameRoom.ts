@@ -56,7 +56,10 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
   }
 
   // Add a message to room history and broadcast the update.
-  private addChatHistoryMessage(message: ChatHistoryMessage) {
+  private addChatHistoryMessage(
+    message: ChatHistoryMessage,
+    excludedClient?: Client,
+  ) {
     this.chatHistory.push(message)
 
     // Remove the oldest messages when the history limit is exceeded.
@@ -64,8 +67,12 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
       this.chatHistory.shift()
     }
 
-    // Notify players currently in the room about the history update.
-    this.broadcast('chat-history-update', message)
+    // Notify other players about the history update.
+    this.broadcast(
+      'chat-history-update',
+      message,
+      excludedClient ? { except: excludedClient } : undefined,
+    )
   }
 
   onCreate() {
@@ -260,13 +267,16 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
     this.state.players.set(client.sessionId, player)
 
     // Add a player join event to room history.
-    this.addChatHistoryMessage({
-      type: 'join',
-      sessionId: client.sessionId,
-      name: displayName,
-      text: `${displayName} joined the game!`,
-      timestamp: Date.now(),
-    })
+    this.addChatHistoryMessage(
+      {
+        type: 'join',
+        sessionId: client.sessionId,
+        name: displayName,
+        text: `${displayName} joined the game!`,
+        timestamp: Date.now(),
+      },
+      client,
+    )
 
     // Notify everyone that this player joined.
     this.broadcastNotification(`${displayName} joined the game!`)

@@ -13,11 +13,7 @@ import ChatBar from '../ChatBar/ChatBar'
 import ChatHistory from '../ChatHistory/ChatHistory'
 import useScaledStage from '../../hooks/useScaledStage'
 import { MessageSquareText } from 'lucide-react'
-import type {
-  ChatHistoryMessage,
-  ChatMessage,
-  Notification,
-} from '../../game/types'
+import type { ChatHistoryMessage, Notification } from '../../game/types'
 import './GameInterface.css'
 
 // Lazy-load the Phaser game component.
@@ -105,7 +101,7 @@ function GameInterface({
 
   // Request chat history and listen for incoming messages.
   useEffect(() => {
-    if (!room || !isGameReady) {
+    if (!room) {
       return
     }
 
@@ -114,26 +110,21 @@ function GameInterface({
       setChatMessages(messages.slice(-100))
     }
 
-    // Add incoming messages to the history.
-    const handleChatMessage = (message: ChatMessage) => {
+    // Add incoming events to the history.
+    const handleChatHistoryUpdate = (message: ChatHistoryMessage) => {
       setChatMessages((currentMessages) =>
-        [
-          ...currentMessages,
-          {
-            type: 'chat' as const,
-            sessionId: message.sessionId,
-            name: message.name,
-            text: message.text,
-            timestamp: message.timestamp,
-          },
-        ].slice(-100),
+        [...currentMessages, message].slice(-100),
       )
     }
 
     // Register message listeners before requesting history.
     const unsubscribeHistory = room.onMessage('chat-history', handleChatHistory)
 
-    const unsubscribeChat = room.onMessage('chat', handleChatMessage)
+    // Listen for updates to the chat history.
+    const unsubscribeHistoryUpdate = room.onMessage(
+      'chat-history-update',
+      handleChatHistoryUpdate,
+    )
 
     // Request the existing chat history.
     room.send('chat-history-request')
@@ -141,9 +132,9 @@ function GameInterface({
     // Remove listeners when the room changes or the component unmounts.
     return () => {
       unsubscribeHistory()
-      unsubscribeChat()
+      unsubscribeHistoryUpdate()
     }
-  }, [room, isGameReady])
+  }, [room])
 
   // Notify the interface when the game has finished initializing.
   const handleGameReady = useCallback(() => {

@@ -33,6 +33,14 @@
   font-weight: 700;
 }
 
+/* System messages for player join and leave events. */
+.chat-history-message.system-message {
+  color: #91a0b0;
+  font-size: 12px;
+  font-style: italic;
+  text-align: center;
+}
+
 .chat-history-empty {
   margin: 0;
   color: #91a0b0;
