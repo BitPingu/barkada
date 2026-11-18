@@ -274,7 +274,11 @@ function GameInterface({
         {/* Bottom toolbar area. */}
         <div className="interface-footer">
           {room ? (
-            <ChatBar room={room} isDisabled={isDialogueOpen} />
+            <ChatBar
+              room={room}
+              currentPlayerSessionId={room.sessionId}
+              isDisabled={isDialogueOpen}
+            />
           ) : (
             // Reserve space for the chat toolbar during character selection.
             <div className="interface-footer-placeholder" />

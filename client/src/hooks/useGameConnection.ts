@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Room } from '@colyseus/sdk'
+import type { GameRoomState, NotificationMessage } from '../game/types'
 import client from '../game/colyseus'
 import type { CharacterType } from '../game/objects/PlayerCharacter'
-import type { NotificationMessage } from '../game/types'
 import useNotifications from './useNotifications'
 import useSessionRecovery from './useSessionRecovery'
 import useRoomStatus from './useRoomStatus'
@@ -16,7 +16,7 @@ function useGameConnection() {
     useNotifications()
 
   // Store the active Colyseus room connection.
-  const [room, setRoom] = useState<Room | null>(null)
+  const [room, setRoom] = useState<Room<GameRoomState> | null>(null)
 
   // Store the selected character type.
   const [characterType, setCharacterType] = useState<CharacterType | null>(null)
@@ -45,7 +45,7 @@ function useGameConnection() {
   const serverClockOffset = useRef<number | null>(null)
 
   // Track the currently active room connection.
-  const roomRef = useRef<Room | null>(null)
+  const roomRef = useRef<Room<GameRoomState> | null>(null)
 
   // Notify the server that the player is active.
   const recordActivity = useCallback(() => {
@@ -58,7 +58,7 @@ function useGameConnection() {
 
   // Set up event handlers for a room connection.
   const setupRoomConnection = useCallback(
-    (connection: Room) => {
+    (connection: Room<GameRoomState>) => {
       // Track the active room connection.
       roomRef.current = connection
       setRoom(connection)
