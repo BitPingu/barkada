@@ -1,13 +1,13 @@
 # barkada
 
-barkada is a browser-based multiplayer social game set in a shared virtual world where players can meet, chat, and explore together. The goal is to create an online space where players can interact, make connections, and enjoy a variety of social experiences.
+barkada is a browser-based multiplayer social game set in a shared virtual world where players can meet, interact, and build connections. Its goal is to create an online space that captures the fun of socializing and spending time with others.
 
-The project draws inspiration from some of my favourite online games growing up, including Club Penguin, Woogi World, and the social games found on Facebook. It aims to capture the sense of community and nostalgia that made these experiences memorable while building something of its own.
+The project draws inspiration from some of my favourite online games growing up, including Club Penguin, Moshi Monsters, and the social games found on Facebook. It aims to recreate the sense of community and nostalgia that made these experiences memorable while building something of its own.
 
 ## Features
 
 - 2D browser-based virtual world
-- Real-time multiplayer and player synchronization
+- Real-time multiplayer with synchronized player states
 - Point-and-click movement
 - Chat system with speech bubbles and chat history
 - Emoji reactions
@@ -16,10 +16,15 @@ The project draws inspiration from some of my favourite online games growing up,
 
 ## Tech Stack
 
+**Frontend**
+
 - React
 - TypeScript
 - Phaser
 - Vite
+
+**Backend**
+
 - Node.js
 - Colyseus
 

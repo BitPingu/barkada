@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Room } from '@colyseus/sdk'
 import type { GameRoomState, PlayerState } from '../../game/types'
 import CharacterPreview from '../../game/CharacterPreview'
-import { Smile, Send, Users, UserRound, Settings } from 'lucide-react'
+import { Smile, Send, Users, UserRound } from 'lucide-react'
 import { FluentEmoji } from '@lobehub/fluent-emoji'
 import './ChatBar.css'
 
@@ -467,17 +467,6 @@ function ChatBar({ room, currentPlayerSessionId, isDisabled }: ChatBarProps) {
           </div>
         )}
       </div>
-
-      {/* Settings — functionality will be added later. */}
-      <button
-        type="button"
-        className="chat-action"
-        aria-label="Settings"
-        title="Settings"
-        onClick={reportActivity}
-      >
-        <Settings size={20} />
-      </button>
     </div>
   )
 }
