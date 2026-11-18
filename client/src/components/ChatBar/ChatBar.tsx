@@ -67,150 +67,57 @@ function ChatBar({ room, currentPlayerSessionId, isDisabled }: ChatBarProps) {
   // References the chat cooldown timeout.
   const cooldownTimeoutRef = useRef<number | null>(null)
 
-  // Close the emoji picker when clicking outside the emoji controls.
+  // Close open panels when clicking outside or pressing Escape.
   useEffect(() => {
     // Handle clicks anywhere on the page.
     function handleClickOutside(event: MouseEvent) {
-      // Check whether the click happened outside the emoji controls.
-      if (
-        isEmojiPickerOpen &&
-        emojiPickerRef.current &&
-        !emojiPickerRef.current.contains(event.target as Node)
-      ) {
-        // Notify the server that the player interacted with the emoji picker.
-        room.send('activity')
+      const target = event.target as Node
+      let closedPanel = false
 
-        // Close the emoji picker.
+      if (isEmojiPickerOpen && !emojiPickerRef.current?.contains(target)) {
         setIsEmojiPickerOpen(false)
+        closedPanel = true
+      }
+
+      if (isPlayersPanelOpen && !playersPanelRef.current?.contains(target)) {
+        setIsPlayersPanelOpen(false)
+        closedPanel = true
+      }
+
+      if (isProfilePanelOpen && !profilePanelRef.current?.contains(target)) {
+        setIsProfilePanelOpen(false)
+        closedPanel = true
+      }
+
+      if (closedPanel) {
+        room.send('activity')
       }
     }
 
-    // Listen for mouse clicks.
-    document.addEventListener('mousedown', handleClickOutside)
-
-    // Remove the listener when the component unmounts.
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [isEmojiPickerOpen, room])
-
-  // Close the emoji picker when pressing Escape.
-  useEffect(() => {
     // Handle keyboard input.
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape' && isEmojiPickerOpen) {
-        // Notify the server that the player interacted with the emoji picker.
-        room.send('activity')
+      if (event.key !== 'Escape') {
+        return
+      }
 
-        // Close the emoji picker.
+      if (isEmojiPickerOpen || isPlayersPanelOpen || isProfilePanelOpen) {
+        room.send('activity')
         setIsEmojiPickerOpen(false)
-      }
-    }
-
-    // Listen for keyboard input.
-    document.addEventListener('keydown', handleKeyDown)
-
-    // Remove the listener when the component unmounts.
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [isEmojiPickerOpen, room])
-
-  // Close the players panel when clicking outside its controls.
-  useEffect(() => {
-    // Handle clicks anywhere on the page.
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        isPlayersPanelOpen &&
-        playersPanelRef.current &&
-        !playersPanelRef.current.contains(event.target as Node)
-      ) {
-        // Notify the server that the player interacted with the panel.
-        room.send('activity')
-
-        // Close the players panel.
         setIsPlayersPanelOpen(false)
-      }
-    }
-
-    // Listen for mouse clicks.
-    document.addEventListener('mousedown', handleClickOutside)
-
-    // Remove the listener when the component unmounts.
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [isPlayersPanelOpen, room])
-
-  // Close the players panel when pressing Escape.
-  useEffect(() => {
-    // Handle keyboard input.
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape' && isPlayersPanelOpen) {
-        // Notify the server that the player interacted with the panel.
-        room.send('activity')
-
-        // Close the players panel.
-        setIsPlayersPanelOpen(false)
-      }
-    }
-
-    // Listen for keyboard input.
-    document.addEventListener('keydown', handleKeyDown)
-
-    // Remove the listener when the component unmounts.
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [isPlayersPanelOpen, room])
-
-  // Close the profile panel when clicking outside its controls.
-  useEffect(() => {
-    // Handle clicks anywhere on the page.
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        isProfilePanelOpen &&
-        profilePanelRef.current &&
-        !profilePanelRef.current.contains(event.target as Node)
-      ) {
-        // Notify the server that the player interacted with the panel.
-        room.send('activity')
-
-        // Close the profile panel.
         setIsProfilePanelOpen(false)
       }
     }
 
-    // Listen for mouse clicks.
+    // Listen for mouse clicks and keyboard input.
     document.addEventListener('mousedown', handleClickOutside)
-
-    // Remove the listener when the component unmounts.
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [isProfilePanelOpen, room])
-
-  // Close the profile panel when pressing Escape.
-  useEffect(() => {
-    // Handle keyboard input.
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape' && isProfilePanelOpen) {
-        // Notify the server that the player interacted with the panel.
-        room.send('activity')
-
-        // Close the profile panel.
-        setIsProfilePanelOpen(false)
-      }
-    }
-
-    // Listen for keyboard input.
     document.addEventListener('keydown', handleKeyDown)
 
-    // Remove the listener when the component unmounts.
+    // Remove listeners when the component updates or unmounts.
     return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [isProfilePanelOpen, room])
+  }, [isEmojiPickerOpen, isPlayersPanelOpen, isProfilePanelOpen, room])
 
   // Update the player list whenever the room state changes.
   useEffect(() => {

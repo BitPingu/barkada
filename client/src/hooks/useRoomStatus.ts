@@ -34,6 +34,7 @@ function useRoomStatus(roomRef: { current: Room | null }) {
       } catch {
         if (isActive) {
           setIsServerOnline(false)
+          setRoomName(null)
 
           // Preserve the room player count while connected.
           if (!roomRef.current) {

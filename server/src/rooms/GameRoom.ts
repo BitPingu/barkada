@@ -27,7 +27,7 @@ export type ChatHistoryMessage = {
   timestamp: number
 }
 
-// Maximum number of chat messages retained in room history.
+// Maximum number of entries retained in room history.
 const MAX_CHAT_HISTORY = 100
 
 // Time before an inactivity warning is sent.
@@ -104,6 +104,32 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
 
     // Reset the player's inactivity timestamp.
     this.lastActivity.set(sessionId, Date.now())
+  }
+
+  // Get a valid chat sender and update their message cooldown.
+  private getChatSender(
+    client: Client,
+    now: number,
+  ): InstanceType<typeof Player> | undefined {
+    const player = this.state.players.get(client.sessionId)
+
+    // Ignore clients without a player entry.
+    if (!player) {
+      return
+    }
+
+    // Enforce a 500 ms cooldown between chat messages and emojis.
+    const lastMessage = this.lastChatMessage.get(client.sessionId) ?? 0
+
+    if (now - lastMessage < 500) {
+      return
+    }
+
+    // Update the player's activity and last message timestamp.
+    this.resetInactivityTimer(client)
+    this.lastChatMessage.set(client.sessionId, now)
+
+    return player
   }
 
   onCreate() {
@@ -200,27 +226,14 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
         return
       }
 
-      // Get the sender's player information.
-      const player = this.state.players.get(client.sessionId)
+      // Get the sender's player information and enforce the message cooldown.
+      const now = Date.now()
+      const player = this.getChatSender(client, now)
 
-      // Ignore messages from clients that aren't in the room.
+      // Ignore messages from clients that aren't eligible to send.
       if (!player) {
         return
       }
-
-      // Enforce a 0.5-second cooldown between chat messages.
-      const now = Date.now()
-      const lastMessage = this.lastChatMessage.get(client.sessionId) ?? 0
-
-      if (now - lastMessage < 500) {
-        return
-      }
-
-      // Reset the player's inactivity timer after sending a valid message.
-      this.resetInactivityTimer(client)
-
-      // Update the player's last message timestamp.
-      this.lastChatMessage.set(client.sessionId, now)
 
       // Calculate when the chat bubble should expire.
       const displayDuration = Math.min(
@@ -268,27 +281,14 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
         return
       }
 
-      // Get the sender's player information.
-      const player = this.state.players.get(client.sessionId)
+      // Get the sender's player information and enforce the message cooldown.
+      const now = Date.now()
+      const player = this.getChatSender(client, now)
 
-      // Ignore messages from clients that aren't in the room.
+      // Ignore messages from clients that aren't eligible to send.
       if (!player) {
         return
       }
-
-      // Enforce the same 500 ms cooldown used for chat messages.
-      const now = Date.now()
-      const lastMessage = this.lastChatMessage.get(client.sessionId) ?? 0
-
-      if (now - lastMessage < 500) {
-        return
-      }
-
-      // Reset the player's inactivity timer after sending a valid message.
-      this.resetInactivityTimer(client)
-
-      // Update the player's last message timestamp.
-      this.lastChatMessage.set(client.sessionId, now)
 
       // Create the emoji message with its timestamp.
       const emojiMessage: ChatHistoryMessage = {

@@ -75,8 +75,18 @@ function GameInterface({
   // Track which room has finished initializing.
   const [readyRoom, setReadyRoom] = useState<GameInterfaceProps['room']>(null)
 
-  // Stores the recent chat messages received from the server.
-  const [chatMessages, setChatMessages] = useState<ChatHistoryMessage[]>([])
+  // Store recent chat messages alongside their room session ID.
+  const [chatHistory, setChatHistory] = useState<{
+    roomId: string | null
+    messages: ChatHistoryMessage[]
+  }>({
+    roomId: null,
+    messages: [],
+  })
+
+  // Only display messages belonging to the current room.
+  const chatMessages =
+    room && chatHistory.roomId === room.sessionId ? chatHistory.messages : []
 
   // Tracks which room has an active inactivity warning.
   const [inactivityWarningRoomId, setInactivityWarningRoomId] = useState<
@@ -107,14 +117,23 @@ function GameInterface({
 
     // Replace the current history with the messages received from the server.
     const handleChatHistory = (messages: ChatHistoryMessage[]) => {
-      setChatMessages(messages.slice(-100))
+      setChatHistory({
+        roomId: room.sessionId,
+        messages: messages.slice(-100),
+      })
     }
 
     // Add incoming events to the history.
     const handleChatHistoryUpdate = (message: ChatHistoryMessage) => {
-      setChatMessages((currentMessages) =>
-        [...currentMessages, message].slice(-100),
-      )
+      setChatHistory((currentHistory) => ({
+        roomId: room.sessionId,
+        messages: [
+          ...(currentHistory.roomId === room.sessionId
+            ? currentHistory.messages
+            : []),
+          message,
+        ].slice(-100),
+      }))
     }
 
     // Register message listeners before requesting history.
