@@ -107,6 +107,8 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
 
     // Reset the player's inactivity timestamp.
     this.lastActivity.set(sessionId, Date.now())
+
+    console.log(new Date().toISOString(), sessionId, 'inactivity timer reset')
   }
 
   // Get a valid chat sender and update their message cooldown.
