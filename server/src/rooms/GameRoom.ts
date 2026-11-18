@@ -58,6 +58,9 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
   // Tracks players who have already received an inactivity warning.
   private warnedInactive = new Set<string>()
 
+  // Tracks pending reconnection reservations so they can be rejected when needed.
+  private reconnectionRejectors = new Map<string, () => void>()
+
   // Stores recent chat messages for the current room session.
   private chatHistory: ChatHistoryMessage[] = []
 
@@ -138,30 +141,38 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
 
     console.log('Room created:', this.roomId)
 
-    // Check connected players for inactivity.
+    // Check connected players and pending reconnection reservations for inactivity.
     this.clock.setInterval(() => {
       const now = Date.now()
 
-      // Only check currently connected clients.
-      for (const client of this.clients) {
-        const sessionId = client.sessionId
-        const lastActivityAt = this.lastActivity.get(sessionId)
-
-        // Skip clients without a recorded activity timestamp.
-        if (lastActivityAt === undefined) {
-          continue
-        }
-
+      // Check every player with a recorded activity timestamp.
+      for (const [sessionId, lastActivityAt] of this.lastActivity) {
         const inactiveDuration = now - lastActivityAt
+
+        // Find the player's currently connected client, if one exists.
+        const client = this.clients.find(
+          (connectedClient) => connectedClient.sessionId === sessionId,
+        )
 
         // Disconnect players who exceed the inactivity timeout.
         if (inactiveDuration >= INACTIVITY_TIMEOUT_MS) {
-          client.leave(INACTIVITY_DISCONNECT_CODE)
+          // Reject a pending reconnection reservation immediately.
+          const rejectReconnection = this.reconnectionRejectors.get(sessionId)
+
+          if (rejectReconnection) {
+            this.reconnectionRejectors.delete(sessionId)
+            rejectReconnection()
+          } else if (client) {
+            // Disconnect players who are still connected.
+            client.leave(INACTIVITY_DISCONNECT_CODE)
+          }
+
           continue
         }
 
-        // Warn players once they reach the warning threshold.
+        // Warn connected players once they reach the warning threshold.
         if (
+          client &&
           inactiveDuration >= INACTIVITY_WARNING_MS &&
           !this.warnedInactive.has(sessionId)
         ) {
@@ -408,6 +419,11 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
       return
     }
 
+    // Store a way to reject this reservation if the player reaches the inactivity timeout.
+    this.reconnectionRejectors.set(client.sessionId, () =>
+      reconnection.reject(),
+    )
+
     // Log successful reconnections.
     reconnection
       .then((reconnectedClient) => {
@@ -423,6 +439,10 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
           client.sessionId,
           'failed to reconnect.',
         )
+      })
+      .finally(() => {
+        // Remove the reservation once the reconnection attempt has finished.
+        this.reconnectionRejectors.delete(client.sessionId)
       })
   }
 
@@ -462,6 +482,9 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
     // Remove the player's inactivity tracking when they leave.
     this.lastActivity.delete(client.sessionId)
     this.warnedInactive.delete(client.sessionId)
+
+    // Remove any pending reconnection tracking when the player leaves.
+    this.reconnectionRejectors.delete(client.sessionId)
 
     // Clear chat history when the room becomes empty.
     if (this.state.players.size === 0) {
