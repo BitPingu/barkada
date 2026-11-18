@@ -324,6 +324,12 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
 
     // Handle player interactions that indicate activity.
     this.onMessage('activity', (client) => {
+      console.log(
+        new Date().toISOString(),
+        client.sessionId,
+        'activity received',
+      )
+
       this.resetInactivityTimer(client)
     })
 
