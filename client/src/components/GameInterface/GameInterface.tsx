@@ -43,6 +43,7 @@ interface GameInterfaceProps {
   isLeaveDialogOpen: boolean
   onConfirmLeaveGame: () => void
   onCancelLeaveGame: () => void
+  recordActivity: () => void
   connectionError: ConnectionOverlayProps['connectionError']
   roomName: string | null
   onReturn: ConnectionOverlayProps['onReturn']
@@ -65,6 +66,7 @@ function GameInterface({
   isLeaveDialogOpen,
   onConfirmLeaveGame,
   onCancelLeaveGame,
+  recordActivity,
   connectionError,
   roomName,
   onReturn,
@@ -228,7 +230,7 @@ function GameInterface({
                     onClick={() => {
                       if (room) {
                         // Notify the server that the player interacted with chat history.
-                        room.send('activity')
+                        recordActivity()
 
                         setChatHistoryRoomId(
                           isChatHistoryOpen ? null : room.sessionId,

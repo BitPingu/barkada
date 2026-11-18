@@ -47,6 +47,11 @@ function useGameConnection() {
   // Track the currently active room connection.
   const roomRef = useRef<Room | null>(null)
 
+  // Notify the server that the player is active.
+  const recordActivity = useCallback(() => {
+    roomRef.current?.send('activity')
+  }, [])
+
   // Fetch server availability and room information.
   const { isServerOnline, playerCount, setPlayerCount, roomName } =
     useRoomStatus(roomRef)
@@ -305,6 +310,7 @@ function useGameConnection() {
     room,
     notifications,
     characterType,
+    recordActivity,
     setCharacterType,
     displayName,
     setDisplayName,

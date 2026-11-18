@@ -25,6 +25,7 @@ function App() {
     joinGame,
     returnToCharacterSelection,
     leaveGame,
+    recordActivity,
   } = useGameConnection()
 
   // Track whether the leave game confirmation dialog is open.
@@ -35,10 +36,20 @@ function App() {
 
   // Check whether the leave game dialog should be displayed.
   const shouldShowLeaveDialog =
-    isLeaveDialogOpen && !isDisconnected && !connectionError
+    isLeaveDialogOpen && !isDisconnected && !isReconnecting && !connectionError
+
+  // Reset the leave dialog when starting a new game session.
+  function handleJoinGame() {
+    setIsLeaveDialogOpen(false)
+    void joinGame()
+  }
 
   // Open the leave game confirmation dialog.
   function handleLeaveGame() {
+    // Prevent opening the dialog when the player is not connected.
+    if (!room || isReconnecting || isDisconnected) return
+
+    recordActivity()
     setIsLeaveDialogOpen(true)
   }
 
@@ -46,6 +57,12 @@ function App() {
   function handleConfirmLeaveGame() {
     setIsLeaveDialogOpen(false)
     void leaveGame()
+  }
+
+  // Cancel leaving the game and keep the session active.
+  function handleCancelLeaveGame() {
+    recordActivity()
+    setIsLeaveDialogOpen(false)
   }
 
   return (
@@ -74,11 +91,12 @@ function App() {
         isJoining={isJoining}
         canJoin={isServerOnline === true}
         joinError={joinError}
-        onJoin={joinGame}
+        onJoin={handleJoinGame}
         isReconnecting={isReconnecting}
         isLeaveDialogOpen={shouldShowLeaveDialog}
         onConfirmLeaveGame={handleConfirmLeaveGame}
-        onCancelLeaveGame={() => setIsLeaveDialogOpen(false)}
+        onCancelLeaveGame={handleCancelLeaveGame}
+        recordActivity={recordActivity}
         connectionError={connectionError}
         roomName={roomName}
         onReturn={returnToCharacterSelection}
