@@ -47,5 +47,13 @@ export default function CharacterPreview({
     }
   }, [characterType])
 
-  return <div ref={previewRef} />
+  return (
+    <div
+      ref={previewRef}
+      style={{
+        width: 160,
+        height: 160,
+      }}
+    />
+  )
 }

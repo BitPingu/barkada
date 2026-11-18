@@ -31,10 +31,10 @@ export type ChatHistoryMessage = {
 const MAX_CHAT_HISTORY = 100
 
 // Time before an inactivity warning is sent.
-const INACTIVITY_WARNING_MS = 1 * 60 * 1000
+const INACTIVITY_WARNING_MS = 2 * 60 * 1000
 
 // Time before an inactive player is disconnected.
-const INACTIVITY_TIMEOUT_MS = 2 * 60 * 1000
+const INACTIVITY_TIMEOUT_MS = 3 * 60 * 1000
 
 // Frequency of inactivity checks.
 const INACTIVITY_CHECK_INTERVAL_MS = 1000
@@ -93,7 +93,7 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
     )
   }
 
-  // Reset a player's inactivity timer after confirming they are still present.
+  // Reset a player's inactivity timer.
   private resetInactivityTimer(client: Client) {
     const sessionId = client.sessionId
 
@@ -104,11 +104,6 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
 
     // Reset the player's inactivity timestamp.
     this.lastActivity.set(sessionId, Date.now())
-
-    // Dismiss the warning if the player had received one.
-    if (this.warnedInactive.delete(sessionId)) {
-      client.send('inactivity-reset')
-    }
   }
 
   onCreate() {
@@ -323,7 +318,13 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
 
     // Handle confirmation that a player is still present.
     this.onMessage('inactivity-confirm', (client) => {
+      // Reset the player's inactivity timer.
       this.resetInactivityTimer(client)
+
+      // Dismiss the warning if the player had received one.
+      if (this.warnedInactive.delete(client.sessionId)) {
+        client.send('inactivity-reset')
+      }
     })
   }
 

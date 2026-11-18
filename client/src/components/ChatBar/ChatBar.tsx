@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Room } from '@colyseus/sdk'
 import type { GameRoomState, PlayerState } from '../../game/types'
+import CharacterPreview from '../../game/CharacterPreview'
 import { Smile, Send, Users, UserRound, Settings } from 'lucide-react'
 import { FluentEmoji } from '@lobehub/fluent-emoji'
 import './ChatBar.css'
@@ -43,8 +44,19 @@ function ChatBar({ room, currentPlayerSessionId, isDisabled }: ChatBarProps) {
   // Tracks whether the players panel is visible.
   const [isPlayersPanelOpen, setIsPlayersPanelOpen] = useState(false)
 
+  // Tracks whether the profile panel is visible.
+  const [isProfilePanelOpen, setIsProfilePanelOpen] = useState(false)
+
+  // References the profile button and panel.
+  const profilePanelRef = useRef<HTMLDivElement>(null)
+
   // Stores the players currently connected to the room.
   const [players, setPlayers] = useState<Array<[string, PlayerState]>>([])
+
+  // Retrieve the current player's synchronized data.
+  const currentPlayer = players.find(
+    ([sessionId]) => sessionId === currentPlayerSessionId,
+  )?.[1]
 
   // References the players button and panel.
   const playersPanelRef = useRef<HTMLDivElement>(null)
@@ -151,6 +163,54 @@ function ChatBar({ room, currentPlayerSessionId, isDisabled }: ChatBarProps) {
       document.removeEventListener('keydown', handleKeyDown)
     }
   }, [isPlayersPanelOpen, room])
+
+  // Close the profile panel when clicking outside its controls.
+  useEffect(() => {
+    // Handle clicks anywhere on the page.
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        isProfilePanelOpen &&
+        profilePanelRef.current &&
+        !profilePanelRef.current.contains(event.target as Node)
+      ) {
+        // Notify the server that the player interacted with the panel.
+        room.send('activity')
+
+        // Close the profile panel.
+        setIsProfilePanelOpen(false)
+      }
+    }
+
+    // Listen for mouse clicks.
+    document.addEventListener('mousedown', handleClickOutside)
+
+    // Remove the listener when the component unmounts.
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isProfilePanelOpen, room])
+
+  // Close the profile panel when pressing Escape.
+  useEffect(() => {
+    // Handle keyboard input.
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape' && isProfilePanelOpen) {
+        // Notify the server that the player interacted with the panel.
+        room.send('activity')
+
+        // Close the profile panel.
+        setIsProfilePanelOpen(false)
+      }
+    }
+
+    // Listen for keyboard input.
+    document.addEventListener('keydown', handleKeyDown)
+
+    // Remove the listener when the component unmounts.
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isProfilePanelOpen, room])
 
   // Update the player list whenever the room state changes.
   useEffect(() => {
@@ -324,7 +384,9 @@ function ChatBar({ room, currentPlayerSessionId, isDisabled }: ChatBarProps) {
           title="Players"
           onClick={() => {
             reportActivity()
+            // Toggle the Players panel and close the Profile panel.
             setIsPlayersPanelOpen((open) => !open)
+            setIsProfilePanelOpen(false)
           }}
         >
           <Users size={20} />
@@ -365,16 +427,46 @@ function ChatBar({ room, currentPlayerSessionId, isDisabled }: ChatBarProps) {
         </div>
       </div>
 
-      {/* Profile — functionality will be added later. */}
-      <button
-        type="button"
-        className="chat-action"
-        aria-label="My Profile"
-        title="My Profile"
-        onClick={reportActivity}
-      >
-        <UserRound size={20} />
-      </button>
+      {/* Profile controls */}
+      <div className="profile-controls" ref={profilePanelRef}>
+        <button
+          type="button"
+          className="chat-action"
+          aria-label="My Profile"
+          aria-expanded={isProfilePanelOpen}
+          aria-controls="profile-panel"
+          title="My Profile"
+          onClick={() => {
+            // Notify the server that the player interacted with the toolbar.
+            reportActivity()
+
+            // Toggle the profile panel and close the Players panel.
+            setIsProfilePanelOpen((isOpen) => !isOpen)
+            setIsPlayersPanelOpen(false)
+          }}
+        >
+          <UserRound size={20} />
+        </button>
+
+        {/* Profile panel */}
+        {isProfilePanelOpen && currentPlayer && (
+          <div
+            id="profile-panel"
+            className="profile-panel"
+            role="region"
+            aria-label="Your profile"
+          >
+            <div className="profile-panel-header">
+              <span>My Profile</span>
+            </div>
+
+            <div className="profile-panel-content">
+              <CharacterPreview characterType={currentPlayer.characterType} />
+              <div className="profile-player-name">{currentPlayer.name}</div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Settings — functionality will be added later. */}
       <button
