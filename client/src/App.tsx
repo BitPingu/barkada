@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import GameHeader from './components/GameHeader/GameHeader'
 import GameInterface from './components/GameInterface/GameInterface'
-import LeaveGameDialog from './components/LeaveGameDialog'
-import SessionExpiredDialog from './components/SessionExpiredDialog'
 import useGameConnection from './hooks/useGameConnection'
 import './App.css'
 
@@ -27,6 +25,7 @@ function App() {
     joinGame,
     returnToCharacterSelection,
     leaveGame,
+    recordActivity,
   } = useGameConnection()
 
   // Track whether the leave game confirmation dialog is open.
@@ -35,8 +34,22 @@ function App() {
   // Track the scale of the game interface for responsive header sizing.
   const [interfaceScale, setInterfaceScale] = useState(1)
 
+  // Check whether the leave game dialog should be displayed.
+  const shouldShowLeaveDialog =
+    isLeaveDialogOpen && !isDisconnected && !isReconnecting && !connectionError
+
+  // Reset the leave dialog when starting a new game session.
+  function handleJoinGame() {
+    setIsLeaveDialogOpen(false)
+    void joinGame()
+  }
+
   // Open the leave game confirmation dialog.
   function handleLeaveGame() {
+    // Prevent opening the dialog when the player is not connected.
+    if (!room || isReconnecting || isDisconnected) return
+
+    recordActivity()
     setIsLeaveDialogOpen(true)
   }
 
@@ -44,6 +57,12 @@ function App() {
   function handleConfirmLeaveGame() {
     setIsLeaveDialogOpen(false)
     void leaveGame()
+  }
+
+  // Cancel leaving the game and keep the session active.
+  function handleCancelLeaveGame() {
+    recordActivity()
+    setIsLeaveDialogOpen(false)
   }
 
   return (
@@ -61,14 +80,6 @@ function App() {
         onLeaveGame={handleLeaveGame}
       />
 
-      {/* Leave game confirmation dialog. */}
-      {isLeaveDialogOpen && (
-        <LeaveGameDialog
-          onConfirm={handleConfirmLeaveGame}
-          onCancel={() => setIsLeaveDialogOpen(false)}
-        />
-      )}
-
       {/* Shared game interface for character selection and gameplay. */}
       <GameInterface
         room={room}
@@ -80,21 +91,17 @@ function App() {
         isJoining={isJoining}
         canJoin={isServerOnline === true}
         joinError={joinError}
-        onJoin={joinGame}
+        onJoin={handleJoinGame}
         isReconnecting={isReconnecting}
+        isLeaveDialogOpen={shouldShowLeaveDialog}
+        onConfirmLeaveGame={handleConfirmLeaveGame}
+        onCancelLeaveGame={handleCancelLeaveGame}
+        recordActivity={recordActivity}
         connectionError={connectionError}
         roomName={roomName}
         onReturn={returnToCharacterSelection}
         onScaleChange={setInterfaceScale}
       />
-
-      {/* Display the session-expired dialog during reconnection recovery. */}
-      {!room && connectionError && (
-        <SessionExpiredDialog
-          message={connectionError}
-          onContinue={returnToCharacterSelection}
-        />
-      )}
     </main>
   )
 }

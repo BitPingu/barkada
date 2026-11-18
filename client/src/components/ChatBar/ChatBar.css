@@ -1,0 +1,258 @@
+/* Chat toolbar */
+.chat-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  padding: 4px 0 0;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  box-shadow: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.chat-bar input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid #d5dee8;
+  border-radius: 8px;
+  outline: none;
+  color: #26384b;
+  font-size: 16px;
+}
+
+.chat-bar input:focus {
+  border-color: #3978c6;
+  box-shadow: 0 0 0 3px rgb(57 120 198 / 12%);
+}
+
+.chat-bar input::placeholder {
+  color: #91a0b0;
+}
+
+.chat-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border: 1px solid #d5dee8;
+  border-radius: 8px;
+  background: #fff;
+  color: #526477;
+  font-size: 18px;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+
+.chat-action:hover:not(:disabled) {
+  background: #f0f5fb;
+  border-color: #3978c6;
+}
+
+.chat-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.send-button {
+  width: auto;
+  padding: 0 18px;
+  border-color: #3978c6;
+  background: #3978c6;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  transition:
+    background-color 200ms ease,
+    opacity 200ms ease,
+    box-shadow 200ms ease;
+}
+
+.send-button:hover:not(:disabled) {
+  border-color: #2d65a9;
+  background: #2d65a9;
+}
+
+/* Emoji picker */
+.emoji-controls {
+  display: flex;
+  align-items: center;
+}
+
+.emoji-picker {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  padding: 4px;
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 0;
+  width: 120px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgb(0 0 0 / 20%);
+  z-index: 10;
+}
+
+.emoji-option {
+  border: 0;
+  background: transparent;
+  border-radius: 6px;
+  padding: 4px;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emoji-option:hover {
+  background: #e8eef5;
+}
+
+/* Players panel */
+.players-controls {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.players-panel {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  width: 240px;
+  overflow: hidden;
+  border: 1px solid #d5dee8;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
+  color: #26384b;
+  z-index: 10;
+}
+
+.players-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e5ebf1;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.players-count {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  background: #e8eef5;
+  color: #526477;
+  font-size: 12px;
+}
+
+.players-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.player-entry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.player-entry:hover {
+  background: #f0f5fb;
+}
+
+.player-avatar {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border: 2px solid #d5dee8;
+  border-radius: 50%;
+  background: #3979b8;
+}
+
+.player-avatar-girl {
+  background: #d982a5;
+}
+
+.player-name {
+  min-width: 0;
+  overflow: hidden;
+  color: #26384b;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.player-you {
+  margin-left: auto;
+  color: #3978c6;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Profile panel */
+.profile-controls {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.profile-panel {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  width: 240px;
+  overflow: hidden;
+  border: 1px solid #d5dee8;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
+  color: #26384b;
+  z-index: 10;
+}
+
+.profile-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e5ebf1;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.profile-panel-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 14px 16px;
+}
+
+.profile-player-name {
+  margin-top: 4px;
+  color: #26384b;
+  font-size: 16px;
+  font-weight: 700;
+}

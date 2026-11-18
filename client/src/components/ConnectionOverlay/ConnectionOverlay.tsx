@@ -1,3 +1,6 @@
+import '../GameDialog/GameDialog.css'
+import './ConnectionOverlay.css'
+
 // Define the props required by the connection overlay.
 type ConnectionOverlayProps = {
   isReconnecting: boolean

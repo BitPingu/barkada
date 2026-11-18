@@ -1,12 +1,12 @@
 {
+  "name": "barkada-server",
   "private": true,
-  "name": "server",
   "version": "0.1.0",
   "description": "The multiplayer server for Barkada",
   "type": "module",
   "main": "build/index.js",
   "engines": {
-    "node": ">= 22.0.0"
+    "node": ">=22.0.0"
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",

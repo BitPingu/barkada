@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Room } from '@colyseus/sdk'
+import type { GameRoomState, NotificationMessage } from '../game/types'
 import client from '../game/colyseus'
 import type { CharacterType } from '../game/objects/PlayerCharacter'
-import type { NotificationMessage } from '../game/types'
 import useNotifications from './useNotifications'
 import useSessionRecovery from './useSessionRecovery'
 import useRoomStatus from './useRoomStatus'
+
+// Custom close code used when a player is disconnected due to inactivity.
+const INACTIVITY_DISCONNECT_CODE = 4020
 
 function useGameConnection() {
   // Manage notifications received from the room.
@@ -13,7 +16,7 @@ function useGameConnection() {
     useNotifications()
 
   // Store the active Colyseus room connection.
-  const [room, setRoom] = useState<Room | null>(null)
+  const [room, setRoom] = useState<Room<GameRoomState> | null>(null)
 
   // Store the selected character type.
   const [characterType, setCharacterType] = useState<CharacterType | null>(null)
@@ -42,7 +45,12 @@ function useGameConnection() {
   const serverClockOffset = useRef<number | null>(null)
 
   // Track the currently active room connection.
-  const roomRef = useRef<Room | null>(null)
+  const roomRef = useRef<Room<GameRoomState> | null>(null)
+
+  // Notify the server that the player is active.
+  const recordActivity = useCallback(() => {
+    roomRef.current?.send('activity')
+  }, [])
 
   // Fetch server availability and room information.
   const { isServerOnline, playerCount, setPlayerCount, roomName } =
@@ -50,7 +58,7 @@ function useGameConnection() {
 
   // Set up event handlers for a room connection.
   const setupRoomConnection = useCallback(
-    (connection: Room) => {
+    (connection: Room<GameRoomState>) => {
       // Track the active room connection.
       roomRef.current = connection
       setRoom(connection)
@@ -98,6 +106,11 @@ function useGameConnection() {
         // Ignore events from connections that are no longer active.
         if (roomRef.current !== connection) return
 
+        // Handle inactivity disconnections without attempting to reconnect.
+        if (code === INACTIVITY_DISCONNECT_CODE) {
+          return
+        }
+
         console.warn('Connection dropped:', code, reason)
         setIsDisconnected(true)
         setIsReconnecting(true)
@@ -126,7 +139,7 @@ function useGameConnection() {
         // Ignore events from connections that are no longer active.
         if (roomRef.current !== connection) return
 
-        console.warn('Left room:', code, reason)
+        console.log('Left room:', { code, reason })
 
         roomRef.current = null
         clearNotifications()
@@ -138,7 +151,13 @@ function useGameConnection() {
         sessionStorage.removeItem('barkada-character-type')
 
         setIsReconnecting(false)
-        setConnectionError("You've lost your connection to the game.")
+
+        // Display an appropriate message based on why the player left.
+        setConnectionError(
+          code === INACTIVITY_DISCONNECT_CODE
+            ? 'You were disconnected due to inactivity.'
+            : "You've lost your connection to the game.",
+        )
       })
 
       // Update the count whenever the room state changes.
@@ -291,6 +310,7 @@ function useGameConnection() {
     room,
     notifications,
     characterType,
+    recordActivity,
     setCharacterType,
     displayName,
     setDisplayName,

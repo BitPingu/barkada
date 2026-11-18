@@ -18,6 +18,30 @@ const ALLOWED_EMOJIS = [
   '🙏',
 ]
 
+// Defines the structure of a stored chat history message.
+export type ChatHistoryMessage = {
+  type: 'chat' | 'emoji' | 'join' | 'leave'
+  sessionId: string
+  name: string
+  text: string
+  timestamp: number
+}
+
+// Maximum number of entries retained in room history.
+const MAX_CHAT_HISTORY = 100
+
+// Time before an inactivity warning is sent.
+const INACTIVITY_WARNING_MS = 2 * 60 * 1000
+
+// Time before an inactive player is disconnected.
+const INACTIVITY_TIMEOUT_MS = 3 * 60 * 1000
+
+// Frequency of inactivity checks.
+const INACTIVITY_CHECK_INTERVAL_MS = 1000
+
+// Custom close code for inactivity disconnections.
+const INACTIVITY_DISCONNECT_CODE = 4020
+
 export class GameRoom extends Room<{ state: GameRoomState }> {
   // Maximum number of players allowed in one room.
   maxClients = 20
@@ -27,6 +51,15 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
 
   // Tracks the last time each player sent a chat message.
   private lastChatMessage = new Map<string, number>()
+
+  // Tracks the last recorded activity time for each player.
+  private lastActivity = new Map<string, number>()
+
+  // Tracks players who have already received an inactivity warning.
+  private warnedInactive = new Set<string>()
+
+  // Stores recent chat messages for the current room session.
+  private chatHistory: ChatHistoryMessage[] = []
 
   // Broadcasts a notification with a synchronized display schedule.
   private broadcastNotification(message: string) {
@@ -40,11 +73,103 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
     })
   }
 
+  // Add a message to room history and broadcast the update.
+  private addChatHistoryMessage(
+    message: ChatHistoryMessage,
+    excludedClient?: Client,
+  ) {
+    this.chatHistory.push(message)
+
+    // Remove the oldest messages when the history limit is exceeded.
+    if (this.chatHistory.length > MAX_CHAT_HISTORY) {
+      this.chatHistory.shift()
+    }
+
+    // Notify other players about the history update.
+    this.broadcast(
+      'chat-history-update',
+      message,
+      excludedClient ? { except: excludedClient } : undefined,
+    )
+  }
+
+  // Reset a player's inactivity timer.
+  private resetInactivityTimer(client: Client) {
+    const sessionId = client.sessionId
+
+    // Ignore clients that don't have an active player entry.
+    if (!this.state.players.has(sessionId)) {
+      return
+    }
+
+    // Reset the player's inactivity timestamp.
+    this.lastActivity.set(sessionId, Date.now())
+  }
+
+  // Get a valid chat sender and update their message cooldown.
+  private getChatSender(
+    client: Client,
+    now: number,
+  ): InstanceType<typeof Player> | undefined {
+    const player = this.state.players.get(client.sessionId)
+
+    // Ignore clients without a player entry.
+    if (!player) {
+      return
+    }
+
+    // Enforce a 500 ms cooldown between chat messages and emojis.
+    const lastMessage = this.lastChatMessage.get(client.sessionId) ?? 0
+
+    if (now - lastMessage < 500) {
+      return
+    }
+
+    // Update the player's activity and last message timestamp.
+    this.resetInactivityTimer(client)
+    this.lastChatMessage.set(client.sessionId, now)
+
+    return player
+  }
+
   onCreate() {
     // Keep the room available when everyone leaves.
     this.autoDispose = false
 
     console.log('Room created:', this.roomId)
+
+    // Check connected players for inactivity.
+    this.clock.setInterval(() => {
+      const now = Date.now()
+
+      // Only check currently connected clients.
+      for (const client of this.clients) {
+        const sessionId = client.sessionId
+        const lastActivityAt = this.lastActivity.get(sessionId)
+
+        // Skip clients without a recorded activity timestamp.
+        if (lastActivityAt === undefined) {
+          continue
+        }
+
+        const inactiveDuration = now - lastActivityAt
+
+        // Disconnect players who exceed the inactivity timeout.
+        if (inactiveDuration >= INACTIVITY_TIMEOUT_MS) {
+          client.leave(INACTIVITY_DISCONNECT_CODE)
+          continue
+        }
+
+        // Warn players once they reach the warning threshold.
+        if (
+          inactiveDuration >= INACTIVITY_WARNING_MS &&
+          !this.warnedInactive.has(sessionId)
+        ) {
+          this.warnedInactive.add(sessionId)
+          client.send('inactivity-warning')
+        }
+      }
+    }, INACTIVITY_CHECK_INTERVAL_MS)
 
     // Respond to client clock synchronization requests.
     this.onMessage('time-sync', (client, message: { clientSentAt: number }) => {
@@ -83,6 +208,9 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
         return
       }
 
+      // Reset the player's inactivity timer after valid movement.
+      this.resetInactivityTimer(client)
+
       // Clamp coordinates to the game boundaries.
       player.x = Math.max(25, Math.min(935, message.x))
       player.y = Math.max(170, Math.min(520, message.y))
@@ -98,24 +226,14 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
         return
       }
 
-      // Get the sender's player information.
-      const player = this.state.players.get(client.sessionId)
+      // Get the sender's player information and enforce the message cooldown.
+      const now = Date.now()
+      const player = this.getChatSender(client, now)
 
-      // Ignore messages from clients that aren't in the room.
+      // Ignore messages from clients that aren't eligible to send.
       if (!player) {
         return
       }
-
-      // Enforce a 0.5-second cooldown between chat messages.
-      const now = Date.now()
-      const lastMessage = this.lastChatMessage.get(client.sessionId) ?? 0
-
-      if (now - lastMessage < 500) {
-        return
-      }
-
-      // Update the player's last message timestamp.
-      this.lastChatMessage.set(client.sessionId, now)
 
       // Calculate when the chat bubble should expire.
       const displayDuration = Math.min(
@@ -123,13 +241,34 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
         Math.max(4000, 3000 + text.length * 60),
       )
 
-      // Broadcast the message with its expiration timestamp.
-      this.broadcast('chat', {
+      // Create the chat message with its timestamp.
+      const chatMessage: ChatHistoryMessage = {
+        type: 'chat',
         sessionId: client.sessionId,
         name: player.name,
         text,
+        timestamp: now,
+      }
+
+      // Add the message to room history.
+      this.addChatHistoryMessage(chatMessage)
+
+      // Broadcast the message with its expiration timestamp.
+      this.broadcast('chat', {
+        ...chatMessage,
         expiresAt: now + displayDuration,
       })
+    })
+
+    // Handle requests for the room's chat history.
+    this.onMessage('chat-history-request', (client) => {
+      // Ignore requests from clients without a player entry.
+      if (!this.state.players.has(client.sessionId)) {
+        return
+      }
+
+      // Send the current chat history to the requesting client.
+      client.send('chat-history', this.chatHistory)
     })
 
     // Handle incoming emoji selections.
@@ -142,24 +281,26 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
         return
       }
 
-      // Get the sender's player information.
-      const player = this.state.players.get(client.sessionId)
+      // Get the sender's player information and enforce the message cooldown.
+      const now = Date.now()
+      const player = this.getChatSender(client, now)
 
-      // Ignore messages from clients that aren't in the room.
+      // Ignore messages from clients that aren't eligible to send.
       if (!player) {
         return
       }
 
-      // Enforce the same 500 ms cooldown used for chat messages.
-      const now = Date.now()
-      const lastMessage = this.lastChatMessage.get(client.sessionId) ?? 0
-
-      if (now - lastMessage < 500) {
-        return
+      // Create the emoji message with its timestamp.
+      const emojiMessage: ChatHistoryMessage = {
+        type: 'emoji',
+        sessionId: client.sessionId,
+        name: player.name,
+        text: message.emoji,
+        timestamp: now,
       }
 
-      // Update the player's last message timestamp.
-      this.lastChatMessage.set(client.sessionId, now)
+      // Add the emoji message to room history.
+      this.addChatHistoryMessage(emojiMessage)
 
       // Broadcast the emoji with its expiration timestamp.
       this.broadcast('emoji', {
@@ -168,6 +309,22 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
         emoji: message.emoji,
         expiresAt: now + 5000,
       })
+    })
+
+    // Handle player interactions that indicate activity.
+    this.onMessage('activity', (client) => {
+      this.resetInactivityTimer(client)
+    })
+
+    // Handle confirmation that a player is still present.
+    this.onMessage('inactivity-confirm', (client) => {
+      // Reset the player's inactivity timer.
+      this.resetInactivityTimer(client)
+
+      // Dismiss the warning if the player had received one.
+      if (this.warnedInactive.delete(client.sessionId)) {
+        client.send('inactivity-reset')
+      }
     })
   }
 
@@ -210,6 +367,21 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
     // Add the player to the synchronized room state.
     this.state.players.set(client.sessionId, player)
 
+    // Initialize the player's inactivity timer.
+    this.resetInactivityTimer(client)
+
+    // Add a player join event to room history.
+    this.addChatHistoryMessage(
+      {
+        type: 'join',
+        sessionId: client.sessionId,
+        name: displayName,
+        text: `${displayName} joined the game!`,
+        timestamp: Date.now(),
+      },
+      client,
+    )
+
     // Notify everyone that this player joined.
     this.broadcastNotification(`${displayName} joined the game!`)
 
@@ -225,8 +397,19 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
       code,
     )
 
-    // Allow the player 60 seconds to reconnect.
-    this.allowReconnection(client, 60)
+    // Create a reconnection reservation for the disconnected player.
+    const reconnection = this.allowReconnection(client, 60)
+
+    // Immediately reject reconnection for players disconnected due to inactivity.
+    if (code === (INACTIVITY_DISCONNECT_CODE as CloseCode)) {
+      // Handle the expected rejection without logging a failed reconnection.
+      reconnection.catch(() => {})
+      reconnection.reject()
+      return
+    }
+
+    // Log successful reconnections.
+    reconnection
       .then((reconnectedClient) => {
         console.log(
           new Date().toISOString(),
@@ -243,13 +426,30 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
       })
   }
 
+  // When a player successfully reconnects.
+  onReconnect(client: Client) {
+    // Reset the inactivity timer after reconnecting.
+    this.resetInactivityTimer(client)
+
+    console.log(client.sessionId, 'reconnected!')
+  }
+
   // When a player leaves.
   onLeave(client: Client, code: CloseCode) {
     // Get the player's information before removing them.
     const player = this.state.players.get(client.sessionId)
 
-    // Notify everyone that this player left.
+    // Record the player's departure in room history.
     if (player) {
+      this.addChatHistoryMessage({
+        type: 'leave',
+        sessionId: client.sessionId,
+        name: player.name,
+        text: `${player.name} left the game!`,
+        timestamp: Date.now(),
+      })
+
+      // Notify everyone that this player left.
       this.broadcastNotification(`${player.name} left the game!`)
     }
 
@@ -258,6 +458,15 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
 
     // Remove the player's chat cooldown when they leave.
     this.lastChatMessage.delete(client.sessionId)
+
+    // Remove the player's inactivity tracking when they leave.
+    this.lastActivity.delete(client.sessionId)
+    this.warnedInactive.delete(client.sessionId)
+
+    // Clear chat history when the room becomes empty.
+    if (this.state.players.size === 0) {
+      this.chatHistory = []
+    }
 
     console.log(client.sessionId, 'left!', code)
   }

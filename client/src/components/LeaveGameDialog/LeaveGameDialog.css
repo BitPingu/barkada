@@ -1,0 +1,31 @@
+.leave-game-dialog-overlay {
+  z-index: 10;
+}
+
+/* Leave game dialog */
+.leave-game-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.leave-game-confirm-button {
+  background: #d64545;
+}
+
+.leave-game-confirm-button:hover {
+  background: #b93636;
+}
+
+/* Mobile landscape */
+@media (orientation: landscape) and (max-height: 600px) {
+  /* Leave Game dialog */
+  .leave-game-dialog h2 {
+    font-size: 20px;
+  }
+
+  .leave-game-dialog .game-dialog-button {
+    padding: 9px 16px;
+    font-size: 13px;
+  }
+}

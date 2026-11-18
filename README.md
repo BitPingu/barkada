@@ -1,25 +1,32 @@
 # barkada
 
-barkada is a browser-based multiplayer social game set in a shared virtual world where players can meet, chat, and explore together. The goal is to create an online space where players can interact, make connections, and enjoy a variety of social experiences.
+barkada is a browser-based multiplayer social game set in a shared virtual world where players can meet, interact, and build connections. Its goal is to create an online space that captures the fun of socializing and spending time with others.
 
-The project draws inspiration from some of my favourite online games growing up, including Club Penguin, Woogi World, and the social games found on Facebook. It aims to capture the sense of community and nostalgia that made these experiences memorable while building something of its own.
+The project draws inspiration from some of my favourite online games growing up, including Club Penguin, Moshi Monsters, and the social games found on Facebook. It aims to recreate the sense of community and nostalgia that made these experiences memorable while building something of its own.
 
 ## Features
 
 - 2D browser-based virtual world
-- Real-time multiplayer
-- Chat system and emoji reactions
-- And more...
+- Real-time multiplayer with synchronized player states
+- Point-and-click movement
+- Chat system with speech bubbles and chat history
+- Emoji reactions
+- Player join and leave notifications
+- Automatic session reconnection
 
 ## Tech Stack
+
+**Frontend**
 
 - React
 - TypeScript
 - Phaser
 - Vite
+
+**Backend**
+
 - Node.js
 - Colyseus
-- PostgreSQL (planned)
 
 ## Project Structure
 
@@ -33,45 +40,74 @@ barkada/
 
 ### Prerequisites
 
-- Node.js
+- Node.js (22 or later)
 - npm
 
-### 1. Clone the repository
+### Installation
+
+Clone the repository and install the dependencies:
 
 ```bash
 git clone https://github.com/BitPingu/barkada.git
 cd barkada
-```
 
-### 2. Set up the server
-
-```bash
-cd server
 npm install
-npm run dev
+npm install --prefix client
+npm install --prefix server
 ```
 
-### 3. Set up the client
+### Running Locally
 
-In a separate terminal:
+Start the multiplayer server in one terminal:
 
 ```bash
-cd client
-npm install
+npm run server:dev
 ```
 
-Create a `.env.local` file in the `client/` directory:
-
-```env
-VITE_SERVER_URL=http://localhost:2567
-```
-
-Start the development server:
+Start the client in another terminal:
 
 ```bash
-npm run dev
+npm run client:dev
 ```
 
-Open the local URL provided by Vite in your browser.
+Open the local URL provided by Vite, typically `http://localhost:5173`.
 
-The frontend runs through Vite, while the Colyseus server listens on `http://localhost:2567` by default.
+The Colyseus server runs on port `2567`.
+
+### Accessing from Other Devices
+
+barkada also supports access from other devices on the same local network.
+
+1. Start the client and server using the commands above.
+2. Find the **Network** URL displayed in the Vite terminal.
+3. Open that URL on another device connected to the same Wi-Fi network.
+
+The client automatically connects to the Colyseus server using the hostname in the browser's address bar. No additional environment configuration is required.
+
+If you cannot connect, check that your firewall allows incoming connections on ports `5173` and `2567`.
+
+## Scripts
+
+All commands can be run from the repository root using the root `package.json`.
+
+| Command                   | Description                                             |
+| ------------------------- | ------------------------------------------------------- |
+| `npm run client:dev`      | Starts the Vite development server                      |
+| `npm run client:lint`     | Runs ESLint on the client                               |
+| `npm run client:build`    | Builds the client for production                        |
+| `npm run client:preview`  | Previews the production client build                    |
+| `npm run server:dev`      | Starts the Colyseus development server                  |
+| `npm run server:test`     | Runs server tests                                       |
+| `npm run server:build`    | Builds the server for production                        |
+| `npm run server:start`    | Starts the production server                            |
+| `npm run server:loadtest` | Runs the multiplayer load test                          |
+| `npm run format`          | Formats the project using Prettier                      |
+| `npm run format:check`    | Checks project formatting                               |
+| `npm run lint`            | Runs client linting                                     |
+| `npm run check`           | Runs all formatting, linting, testing, and build checks |
+
+### Recommended Workflow
+
+Run `npm run format` to format files when needed.
+
+Run `npm run check` before committing changes to verify formatting, linting, tests, and production builds.
