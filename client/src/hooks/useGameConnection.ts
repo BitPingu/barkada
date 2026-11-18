@@ -71,6 +71,9 @@ function useGameConnection() {
   // Track the currently active room connection.
   const roomRef = useRef<Room<GameRoomState> | null>(null)
 
+  // Tracks whether the server is disconnecting the player due to inactivity.
+  const inactivityDisconnectRef = useRef(false)
+
   // Notify the server that the player is active.
   const recordActivity = useCallback(() => {
     roomRef.current?.send('activity')
@@ -86,9 +89,18 @@ function useGameConnection() {
       // Track the active room connection.
       roomRef.current = connection
       setRoom(connection)
+      inactivityDisconnectRef.current = false
 
       // Reset the clock offset for the new connection.
       serverClockOffset.current = null
+
+      // Listen for an inactivity disconnection notice from the server.
+      connection.onMessage('inactivity-disconnect', () => {
+        // Ignore messages from connections that are no longer active.
+        if (roomRef.current !== connection) return
+
+        inactivityDisconnectRef.current = true
+      })
 
       // Listen for the server's clock synchronization response.
       connection.onMessage(
@@ -131,7 +143,10 @@ function useGameConnection() {
         if (roomRef.current !== connection) return
 
         // Handle inactivity disconnections without attempting to reconnect.
-        if (code === INACTIVITY_DISCONNECT_CODE) {
+        if (
+          code === INACTIVITY_DISCONNECT_CODE ||
+          inactivityDisconnectRef.current
+        ) {
           return
         }
 
@@ -163,6 +178,10 @@ function useGameConnection() {
         // Ignore events from connections that are no longer active.
         if (roomRef.current !== connection) return
 
+        // Check whether the room ended due to inactivity.
+        const wasInactivityDisconnect =
+          code === INACTIVITY_DISCONNECT_CODE || inactivityDisconnectRef.current
+
         console.log('Left room:', { code, reason })
 
         roomRef.current = null
@@ -177,7 +196,7 @@ function useGameConnection() {
 
         // Display an appropriate message based on why the player left.
         setConnectionError(
-          code === INACTIVITY_DISCONNECT_CODE
+          wasInactivityDisconnect
             ? 'You were disconnected due to inactivity.'
             : "You've lost your connection to the game.",
         )

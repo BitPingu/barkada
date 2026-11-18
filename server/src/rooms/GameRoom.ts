@@ -165,6 +165,9 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
             this.reconnectionRejectors.delete(sessionId)
             rejectReconnection()
           } else if (client) {
+            // Notify the client that it is being disconnected due to inactivity.
+            client.send('inactivity-disconnect')
+
             // Disconnect players who are still connected.
             client.leave(INACTIVITY_DISCONNECT_CODE)
           }
