@@ -6,7 +6,7 @@ import './CharacterSelection.css'
 
 type CharacterSelectionProps = {
   characterType: CharacterType | null
-  setCharacterType: (type: CharacterType) => void
+  setCharacterType: (type: CharacterType | null) => void
   displayName: string
   setDisplayName: (name: string) => void
   isJoining: boolean
@@ -70,7 +70,9 @@ function CharacterSelection({
                   className={`character-option ${
                     characterType === 'boy' ? 'selected' : ''
                   }`}
-                  onClick={() => setCharacterType('boy')}
+                  onClick={() =>
+                    setCharacterType(characterType === 'boy' ? null : 'boy')
+                  }
                   aria-label="Boy character"
                   aria-pressed={characterType === 'boy'}
                   disabled={isJoining}
@@ -83,7 +85,9 @@ function CharacterSelection({
                   className={`character-option ${
                     characterType === 'girl' ? 'selected' : ''
                   }`}
-                  onClick={() => setCharacterType('girl')}
+                  onClick={() =>
+                    setCharacterType(characterType === 'girl' ? null : 'girl')
+                  }
                   aria-label="Girl character"
                   aria-pressed={characterType === 'girl'}
                   disabled={isJoining}

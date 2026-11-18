@@ -156,7 +156,6 @@
 }
 
 .character-option:not(:disabled):hover {
-  transform: translateY(-1.5px);
   border-color: #3978c6;
   background: #eaf3ff;
 }

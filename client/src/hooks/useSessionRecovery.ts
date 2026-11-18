@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 import type { Room } from '@colyseus/sdk'
 import client from '../game/colyseus'
-import type { CharacterType } from '../game/objects/PlayerCharacter'
 
 // Defines the state setters and callback required for session recovery.
 type UseSessionRecoveryProps = {
@@ -11,7 +10,6 @@ type UseSessionRecoveryProps = {
   setIsJoining: Dispatch<SetStateAction<boolean>>
   setIsReconnecting: Dispatch<SetStateAction<boolean>>
   setIsDisconnected: Dispatch<SetStateAction<boolean>>
-  setCharacterType: Dispatch<SetStateAction<CharacterType | null>>
   setConnectionError: Dispatch<SetStateAction<string | null>>
 }
 
@@ -21,7 +19,6 @@ function useSessionRecovery({
   setIsJoining,
   setIsReconnecting,
   setIsDisconnected,
-  setCharacterType,
   setConnectionError,
 }: UseSessionRecoveryProps) {
   // Reuse an ongoing session recovery request across effect executions.
@@ -44,29 +41,12 @@ function useSessionRecovery({
       if (roomRef.current || isHandlingRecovery) return
 
       const token = sessionStorage.getItem('barkada-reconnection-token')
-      const savedCharacterType = sessionStorage.getItem(
-        'barkada-character-type',
-      )
 
       // Skip recovery if no saved session exists.
-      if (!token && !savedCharacterType) return
-
-      // Validate the saved character type.
-      const isValidCharacterType =
-        savedCharacterType === 'boy' || savedCharacterType === 'girl'
-
-      // Clear incomplete or invalid session data.
-      if (!token || !isValidCharacterType) {
-        sessionStorage.removeItem('barkada-reconnection-token')
-        sessionStorage.removeItem('barkada-character-type')
-
-        setConnectionError('Your previous session expired.')
-        return
-      }
+      if (!token) return
 
       setIsJoining(true)
       setIsReconnecting(true)
-      setCharacterType(savedCharacterType)
 
       isHandlingRecovery = true
 
@@ -132,7 +112,6 @@ function useSessionRecovery({
         if (errorCode === 524 || errorCode === 522 || isInvalidTokenFormat) {
           // Clear invalid session data so the player can join a new room.
           sessionStorage.removeItem('barkada-reconnection-token')
-          sessionStorage.removeItem('barkada-character-type')
 
           setConnectionError('Your previous session expired.')
         }
@@ -170,7 +149,6 @@ function useSessionRecovery({
     setIsJoining,
     setIsReconnecting,
     setIsDisconnected,
-    setCharacterType,
     setConnectionError,
   ])
 }

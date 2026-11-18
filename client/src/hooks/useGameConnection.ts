@@ -18,13 +18,37 @@ function useGameConnection() {
   // Store the active Colyseus room connection.
   const [room, setRoom] = useState<Room<GameRoomState> | null>(null)
 
-  // Store the selected character type.
-  const [characterType, setCharacterType] = useState<CharacterType | null>(null)
+  // Store the selected character type, restoring it from the current session.
+  const [characterType, setCharacterType] = useState<CharacterType | null>(
+    () => {
+      const savedCharacterType = sessionStorage.getItem(
+        'barkada-character-type',
+      )
+
+      return savedCharacterType === 'boy' || savedCharacterType === 'girl'
+        ? savedCharacterType
+        : null
+    },
+  )
 
   // Store the player's display name, restoring it from the current session.
   const [displayName, setDisplayName] = useState(
     () => sessionStorage.getItem('barkada-display-name') ?? '',
   )
+
+  // Save the selected character type whenever it changes.
+  useEffect(() => {
+    if (characterType) {
+      sessionStorage.setItem('barkada-character-type', characterType)
+    } else {
+      sessionStorage.removeItem('barkada-character-type')
+    }
+  }, [characterType])
+
+  // Save the player's display name whenever it changes.
+  useEffect(() => {
+    sessionStorage.setItem('barkada-display-name', displayName)
+  }, [displayName])
 
   // Tracks whether the player is joining the game.
   const [isJoining, setIsJoining] = useState(false)
@@ -148,7 +172,6 @@ function useGameConnection() {
 
         // Clear saved session data because this room can no longer be recovered.
         sessionStorage.removeItem('barkada-reconnection-token')
-        sessionStorage.removeItem('barkada-character-type')
 
         setIsReconnecting(false)
 
@@ -178,7 +201,6 @@ function useGameConnection() {
     setIsJoining,
     setIsReconnecting,
     setIsDisconnected,
-    setCharacterType,
     setConnectionError,
   })
 
@@ -220,9 +242,6 @@ function useGameConnection() {
         'barkada-reconnection-token',
         connection.reconnectionToken,
       )
-
-      sessionStorage.setItem('barkada-character-type', characterType)
-      sessionStorage.setItem('barkada-display-name', trimmedDisplayName)
 
       setupRoomConnection(connection)
       setIsJoining(false)
@@ -268,7 +287,6 @@ function useGameConnection() {
 
     // Clear any saved reconnection data.
     sessionStorage.removeItem('barkada-reconnection-token')
-    sessionStorage.removeItem('barkada-character-type')
 
     setRoom(null)
     setIsJoining(false)
@@ -291,7 +309,6 @@ function useGameConnection() {
 
     // Clear the saved reconnection data.
     sessionStorage.removeItem('barkada-reconnection-token')
-    sessionStorage.removeItem('barkada-character-type')
 
     // Reset the connection state.
     setRoom(null)
