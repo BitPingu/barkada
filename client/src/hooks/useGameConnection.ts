@@ -100,6 +100,7 @@ function useGameConnection() {
         if (roomRef.current !== connection) return
 
         inactivityDisconnectRef.current = true
+        connection.reconnection.enabled = false
       })
 
       // Listen for the server's clock synchronization response.
