@@ -17,7 +17,7 @@ export interface GameRoomState {
 
 // Represents the shared data for a chat history message.
 export interface ChatHistoryMessage {
-  type: 'chat' | 'join' | 'leave'
+  type: 'chat' | 'emoji' | 'join' | 'leave'
   sessionId: string
   name: string
   text: string

@@ -20,7 +20,7 @@ const ALLOWED_EMOJIS = [
 
 // Defines the structure of a stored chat history message.
 export type ChatHistoryMessage = {
-  type: 'chat' | 'join' | 'leave'
+  type: 'chat' | 'emoji' | 'join' | 'leave'
   sessionId: string
   name: string
   text: string
@@ -294,6 +294,18 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
 
       // Update the player's last message timestamp.
       this.lastChatMessage.set(client.sessionId, now)
+
+      // Create the emoji message with its timestamp.
+      const emojiMessage: ChatHistoryMessage = {
+        type: 'emoji',
+        sessionId: client.sessionId,
+        name: player.name,
+        text: message.emoji,
+        timestamp: now,
+      }
+
+      // Add the emoji message to room history.
+      this.addChatHistoryMessage(emojiMessage)
 
       // Broadcast the emoji with its expiration timestamp.
       this.broadcast('emoji', {
