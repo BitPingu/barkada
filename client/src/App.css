@@ -20,7 +20,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   height: 100%;
   min-height: 0;
   padding: 32px 24px;
@@ -30,7 +30,7 @@ body {
 /* Mobile layout */
 @media (max-width: 600px) {
   .game-page {
-    gap: 8px;
+    gap: 6px;
     padding: 20px 12px;
   }
 }

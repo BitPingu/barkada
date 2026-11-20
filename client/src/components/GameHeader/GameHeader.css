@@ -2,7 +2,7 @@
 .game-header {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
   flex: 0 0 auto;
   width: min(1100px, 100%);
 }
@@ -25,7 +25,7 @@
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -36,18 +36,20 @@
   justify-content: center;
   width: 42px;
   height: 42px;
-  border-radius: 11px;
+  border-radius: 10px;
   background: #3978c6;
   color: #fff;
-  font-size: 27px;
+  font-size: 25px;
   font-weight: 800;
   line-height: 1;
+  padding-left: 1px;
+  padding-top: 1px;
 }
 
 .brand h1 {
   margin: 0;
   color: #26384b;
-  font-size: 26px;
+  font-size: 25px;
   font-weight: 700;
   letter-spacing: -0.8px;
 }
@@ -58,9 +60,9 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 8px 13px;
+  padding: 7px 11px;
   border: 1px solid #e0e5ec;
-  border-radius: 9px;
+  border-radius: 8px;
   background: #fff;
   color: #526477;
   font: inherit;
@@ -215,6 +217,8 @@
     width: 36px;
     height: 36px;
     font-size: 20px;
+    padding-left: 1px;
+    padding-top: 1px;
   }
 
   .brand h1 {
@@ -281,8 +285,10 @@
   .brand-mark {
     width: 22px;
     height: 22px;
-    font-size: 14px;
+    font-size: 12px;
     border-radius: 6px;
+    padding-left: 1px;
+    padding-top: 1px;
   }
 
   .connection-status {
